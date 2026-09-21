@@ -1,0 +1,31 @@
+---
+description: Pin GPT 5.6 Sol for planning and Gemini 3.7 Flash for execution
+alwaysApply: true
+---
+
+# Model routing
+
+Use these exact Task/subagent slugs:
+
+- **Planning** (Plan mode, architecture, PRDs, design, UX, specialist reviews, trade-offs, scoping): `gpt-5.6-sol-medium`
+- **Execution** (coding, refactors, tests, QA, git, deploys, scripts, browser verification): `gemini-3.7-flash-high`
+
+When launching Task or a custom subagent, set `model` to one of those slugs. Do not use `inherit`. Do not pick Grok, Composer, or Claude unless the user names that model.
+
+New agents and skills must set `model:` in YAML frontmatter the same way.
+
+Prefer a **project specialist** in `.cursor/agents/` when the work matches:
+
+| Agent | Use for |
+| --- | --- |
+| `product-manager` | PRDs, scope, stories, what to build |
+| `software-architect` | Boundaries, auth, Expo/Supabase shape |
+| `ui-ux-designer` | Flows, layout, copy, theme |
+| `dba` | Schema, RLS, migrations |
+| `ai-expert` | Coach LLM vs deterministic numbers |
+| `qa-engineer` | Live functionality/device QA |
+| `devops` | Expo, Supabase CLI, secrets, GitHub |
+
+Otherwise use user-level `planner` / `executor`.
+
+The main chat must announce and launch these agents per `.cursor/rules/agent-orchestration.mdc`. Specialists call the next agent per `.cursor/agents/HANDOFF.md`.

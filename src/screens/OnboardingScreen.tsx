@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Card, Label, ScreenContainer, TextInput } from '../components/ui';
+import GlossaryTip from '../components/GlossaryTip';
 import { useAuth } from '../hooks/useAuth';
-import { goalExplanation } from '../lib/goalExplanations';
+import { GOAL_OPTIONS, EQUIPMENT_OPTIONS, EQUIPMENT_HINT, goalExplanation } from '../lib/goalExplanations';
 import { buildNutritionPlanFromGoals } from '../lib/nutritionPlan';
 import { supabase } from '../lib/supabase';
 import { toStorageLengthCm, toStorageWeightKg } from '../lib/units';
@@ -24,25 +25,10 @@ const GENDERS: { id: Gender; label: string }[] = [
   { id: 'other', label: 'Other / prefer not to say' },
 ];
 
-const GOAL_OPTIONS: { id: PrimaryGoalType; label: string }[] = [
-  { id: 'fat_loss', label: 'Lose fat' },
-  { id: 'muscle_gain', label: 'Build muscle' },
-  { id: 'recomp', label: 'Recomp' },
-  { id: 'strength', label: 'Get stronger' },
-  { id: 'general', label: 'Stay fit' },
-];
-
 const EXPERIENCE: { id: ExperienceLevel; label: string }[] = [
   { id: 'beginner', label: 'Beginner' },
   { id: 'intermediate', label: 'Intermediate' },
   { id: 'advanced', label: 'Advanced' },
-];
-
-const EQUIPMENT: { id: EquipmentPref; label: string }[] = [
-  { id: 'full_gym', label: 'Full gym' },
-  { id: 'dumbbells', label: 'Dumbbells' },
-  { id: 'bodyweight', label: 'Bodyweight' },
-  { id: 'mixed', label: 'Mixed' },
 ];
 
 const DAYS = [2, 3, 4, 5, 6];
@@ -180,6 +166,41 @@ export default function OnboardingScreen() {
         });
         if (goalsError) throw goalsError;
 
+        // Update or create Main gym profile from chosen onboarding equipment preset
+        const { data: existingMain } = await supabase
+          .from('gym_profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('is_main', true)
+          .is('archived_at', null)
+          .maybeSingle();
+
+        if (existingMain) {
+          await supabase
+            .from('gym_profiles')
+            .update({ base_preset: equipment })
+            .eq('id', existingMain.id);
+        } else {
+          const { data: newMain } = await supabase
+            .from('gym_profiles')
+            .insert({
+              user_id: userId,
+              name: 'Main gym',
+              base_preset: equipment,
+              kind: 'permanent',
+              is_main: true,
+            })
+            .select()
+            .single();
+
+          if (newMain) {
+            await supabase
+              .from('profiles')
+              .update({ active_gym_profile_id: newMain.id })
+              .eq('id', userId);
+          }
+        }
+
         const { error: planError } = await supabase.from('nutrition_plans').upsert({
           user_id: userId,
           ...draft,
@@ -241,7 +262,12 @@ export default function OnboardingScreen() {
         {step === 1 && (
           <View>
             <Text style={styles.title}>About you</Text>
-            <Text style={styles.lede}>Used for calorie estimates. Skip any field you would rather fill in later.</Text>
+            <View style={styles.ledeRow}>
+              <Text style={styles.ledeText}>
+                Age and gender help estimate how much energy your body uses each day. Skip any field you would rather fill in later.
+              </Text>
+              <GlossaryTip term="calorie_estimate" />
+            </View>
 
             <View style={styles.field}>
               <Label>Display name</Label>
@@ -343,7 +369,10 @@ export default function OnboardingScreen() {
                   />
                 ))}
               </View>
-              <Text style={styles.explain}>{goalExplanation(primaryGoal)}</Text>
+              <View style={styles.explainRow}>
+                <Text style={styles.explain}>{goalExplanation(primaryGoal)}</Text>
+                <GlossaryTip term={primaryGoal} />
+              </View>
             </View>
 
             <View style={styles.field}>
@@ -372,7 +401,7 @@ export default function OnboardingScreen() {
             <View style={styles.field}>
               <Label>Equipment</Label>
               <View style={styles.wrap}>
-                {EQUIPMENT.map((e) => (
+                {EQUIPMENT_OPTIONS.map((e) => (
                   <Chip
                     key={e.id}
                     label={e.label}
@@ -381,6 +410,7 @@ export default function OnboardingScreen() {
                   />
                 ))}
               </View>
+              <Text style={styles.hint}>{EQUIPMENT_HINT}</Text>
             </View>
 
             <View style={styles.field}>
@@ -405,7 +435,7 @@ export default function OnboardingScreen() {
               <Text style={styles.summaryLine}>{displayName.trim() || 'No display name yet'}</Text>
               <Text style={styles.summaryMuted}>
                 {GOAL_OPTIONS.find((g) => g.id === primaryGoal)?.label} · {daysPerWeek} days/week ·{' '}
-                {EQUIPMENT.find((e) => e.id === equipment)?.label}
+                {EQUIPMENT_OPTIONS.find((e) => e.id === equipment)?.label}
               </Text>
               {parsedWeightKg != null && (
                 <Text style={styles.summaryMuted}>
@@ -457,6 +487,8 @@ const styles = StyleSheet.create({
   content: { paddingBottom: spacing.lg, flexGrow: 1 },
   title: { ...typography.h1, marginBottom: spacing.sm },
   lede: { ...typography.bodyMuted, marginBottom: spacing.lg, lineHeight: 20 },
+  ledeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.lg, gap: spacing.xs },
+  ledeText: { ...typography.bodyMuted, flex: 1, lineHeight: 20 },
   card: { gap: spacing.sm },
   tourItem: { ...typography.body, lineHeight: 22 },
   field: { marginBottom: spacing.md },
@@ -476,7 +508,8 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { color: colors.textMuted, fontWeight: '600' },
   chipTextActive: { color: colors.background },
-  explain: { ...typography.bodyMuted, marginTop: spacing.sm, lineHeight: 20 },
+  explainRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.sm, gap: spacing.xs },
+  explain: { ...typography.bodyMuted, flex: 1, lineHeight: 20 },
   hint: { color: colors.warning, marginTop: spacing.xs },
   summaryLine: { ...typography.h3 },
   summaryMuted: { ...typography.bodyMuted, lineHeight: 20 },

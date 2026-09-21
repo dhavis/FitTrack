@@ -1,0 +1,60 @@
+---
+description: Announce and launch FitTrack specialist agents for every request
+alwaysApply: true
+---
+
+# Agent orchestration
+
+The main chat **orchestrates**. Specialists do the lane work.
+
+## Every user message
+
+Before doing the work, put this block at the top of your reply (even when no specialist is needed):
+
+```markdown
+**Agents:** `name` (why) → `name` (why)
+```
+
+If the main chat will do it alone: `**Agents:** main chat only — <one-line why>`.
+
+Then **launch** the first required specialist(s) with Task in that same turn. Do not only describe them.
+
+## How to launch
+
+Task parameters:
+
+- `subagent_type`: `product-manager` | `ui-ux-designer` | `software-architect` | `dba` | `ai-expert` | `qa-engineer` | `devops` | `executor` | `planner`
+- `model`: `gpt-5.6-sol-medium` (PM, UX, architect, DBA, AI expert, planner) or `gemini-3.7-flash-high` (executor, QA, DevOps)
+- Never `inherit`. Never Grok / Composer / Claude unless the user named that listed model
+- `run_in_background: false` unless two specialists are independent (then launch both in one turn)
+- Prompt must include the user request, FitTrack context, and what that agent should return
+
+Follow each agent's **Handoff** footer. If they name a Next agent and did not already launch it, you launch it next with their Brief.
+
+Handoff table: `.cursor/agents/HANDOFF.md`.
+
+## Pick the first agent
+
+| Request | First |
+| --- | --- |
+| What to build, roadmap, prioritize, expand features | `product-manager` |
+| Layout, copy, flows, theme | `ui-ux-designer` |
+| Architecture, auth, where code lives | `software-architect` |
+| Schema, RLS, SQL, migrations | `dba` |
+| Coach, LLM, prompts, generated copy | `ai-expert` |
+| Implement, fix, refactor | `executor` (plan first via architect/PM if the change is not already specified) |
+| Test, QA, smoke, devices | `qa-engineer` |
+| Expo, Metro, `.env`, Supabase CLI, GitHub, secrets | `devops` |
+| `sync-to-github` | follow that skill (`executor` if you need a subagent) |
+| Question, summary, or already-answered | main chat only |
+
+Typical build pipeline (skip steps that do not apply):
+
+`product-manager` → `ui-ux-designer` and/or `software-architect` → `dba` and/or `ai-expert` → `executor` → `qa-engineer`
+
+## Do not
+
+- Launch all seven on every message
+- Re-open product debates inside `executor`
+- Print secrets
+- Skip the **Agents:** line

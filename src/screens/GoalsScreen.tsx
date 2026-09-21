@@ -1,9 +1,15 @@
-import { NavigationProp, useNavigation } from '@react-navigation/native';
-import React, { useEffect, useState } from 'react';
+import { NavigationProp, useFocusEffect, useNavigation } from '@react-navigation/native';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Card, Label, ScreenContainer, SectionTitle, TextInput } from '../components/ui';
+import GlossaryTip from '../components/GlossaryTip';
 import { useAuth } from '../hooks/useAuth';
-import { goalExplanation } from '../lib/goalExplanations';
+import {
+  equipmentLabel,
+  goalExplanation,
+  goalLabel,
+} from '../lib/goalExplanations';
+import { fetchUserGymProfiles } from '../lib/gymProfiles';
 import { suggestGoals } from '../lib/goalSuggestions';
 import { supabase } from '../lib/supabase';
 import { displayWeight, toStorageWeightKg } from '../lib/units';
@@ -14,13 +20,13 @@ import {
   EquipmentPref,
   ExperienceLevel,
   Goals,
+  GymProfile,
   PrimaryGoalType,
   WeightLog,
 } from '../types/db';
 
 const GOALS: PrimaryGoalType[] = ['fat_loss', 'muscle_gain', 'recomp', 'strength', 'general'];
 const EXPERIENCE: ExperienceLevel[] = ['beginner', 'intermediate', 'advanced'];
-const EQUIPMENT: EquipmentPref[] = ['full_gym', 'dumbbells', 'bodyweight', 'mixed'];
 
 export default function GoalsScreen() {
   const navigation = useNavigation<NavigationProp<MainTabParamList>>();
@@ -29,6 +35,7 @@ export default function GoalsScreen() {
   const [goals, setGoals] = useState<Goals | null>(null);
   const [weights, setWeights] = useState<WeightLog[]>([]);
   const [measurement, setMeasurement] = useState<BodyMeasurement | null>(null);
+  const [mainGym, setMainGym] = useState<GymProfile | null>(null);
   const [targetWeight, setTargetWeight] = useState('');
   const [weeklyWorkouts, setWeeklyWorkouts] = useState('3');
   const [calorieTarget, setCalorieTarget] = useState('');
@@ -45,43 +52,52 @@ export default function GoalsScreen() {
   const [saving, setSaving] = useState(false);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadData = useCallback(async () => {
     if (!session) return;
-    (async () => {
-      const [{ data: goalsData }, { data: weightData }, { data: mData }] = await Promise.all([
-        supabase.from('goals').select('*').eq('user_id', session.user.id).maybeSingle(),
-        supabase
-          .from('weight_logs')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .order('logged_at', { ascending: false })
-          .limit(7),
-        supabase
-          .from('body_measurements')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .order('logged_at', { ascending: false })
-          .limit(1),
-      ]);
-      setGoals(goalsData ?? null);
-      setWeights(weightData ?? []);
-      setMeasurement(mData?.[0] ?? null);
-      if (goalsData) {
-        if (goalsData.target_weight_kg) setTargetWeight(displayWeight(goalsData.target_weight_kg, unit).toFixed(1));
-        setWeeklyWorkouts(String(goalsData.weekly_workout_target ?? 3));
-        setCalorieTarget(goalsData.daily_calorie_target ? String(Math.round(goalsData.daily_calorie_target)) : '');
-        setProteinTarget(goalsData.daily_protein_target_g ? String(Math.round(goalsData.daily_protein_target_g)) : '');
-        setCarbsTarget(goalsData.daily_carbs_target_g ? String(Math.round(goalsData.daily_carbs_target_g)) : '');
-        setFatTarget(goalsData.daily_fat_target_g ? String(Math.round(goalsData.daily_fat_target_g)) : '');
-        if (goalsData.primary_goal_type) setPrimaryGoal(goalsData.primary_goal_type);
-        if (goalsData.experience) setExperience(goalsData.experience);
-        if (goalsData.days_per_week) setDaysPerWeek(String(goalsData.days_per_week));
-        if (goalsData.equipment_pref) setEquipment(goalsData.equipment_pref);
-        if (goalsData.session_minutes) setSessionMinutes(String(goalsData.session_minutes));
-        if (goalsData.injury_notes) setInjuryNotes(goalsData.injury_notes);
-      }
-    })();
+    const [{ data: goalsData }, { data: weightData }, { data: mData }, gyms] = await Promise.all([
+      supabase.from('goals').select('*').eq('user_id', session.user.id).maybeSingle(),
+      supabase
+        .from('weight_logs')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('logged_at', { ascending: false })
+        .limit(7),
+      supabase
+        .from('body_measurements')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('logged_at', { ascending: false })
+        .limit(1),
+      fetchUserGymProfiles(false).catch(() => []),
+    ]);
+    setGoals(goalsData ?? null);
+    setWeights(weightData ?? []);
+    setMeasurement(mData?.[0] ?? null);
+    const main = gyms.find((g) => g.is_main) ?? null;
+    setMainGym(main);
+    if (main) setEquipment(main.base_preset);
+
+    if (goalsData) {
+      if (goalsData.target_weight_kg) setTargetWeight(displayWeight(goalsData.target_weight_kg, unit).toFixed(1));
+      setWeeklyWorkouts(String(goalsData.weekly_workout_target ?? 3));
+      setCalorieTarget(goalsData.daily_calorie_target ? String(Math.round(goalsData.daily_calorie_target)) : '');
+      setProteinTarget(goalsData.daily_protein_target_g ? String(Math.round(goalsData.daily_protein_target_g)) : '');
+      setCarbsTarget(goalsData.daily_carbs_target_g ? String(Math.round(goalsData.daily_carbs_target_g)) : '');
+      setFatTarget(goalsData.daily_fat_target_g ? String(Math.round(goalsData.daily_fat_target_g)) : '');
+      if (goalsData.primary_goal_type) setPrimaryGoal(goalsData.primary_goal_type);
+      if (goalsData.experience) setExperience(goalsData.experience);
+      if (goalsData.days_per_week) setDaysPerWeek(String(goalsData.days_per_week));
+      if (!main && goalsData.equipment_pref) setEquipment(goalsData.equipment_pref);
+      if (goalsData.session_minutes) setSessionMinutes(String(goalsData.session_minutes));
+      if (goalsData.injury_notes) setInjuryNotes(goalsData.injury_notes);
+    }
   }, [session, unit]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
 
   const applySuggestion = () => {
     const s = suggestGoals({
@@ -173,11 +189,14 @@ export default function GoalsScreen() {
           <View style={styles.wrap}>
             {GOALS.map((g) => (
               <Pressable key={g} onPress={() => setPrimaryGoal(g)} style={[styles.chip, primaryGoal === g && styles.chipActive]}>
-                <Text style={[styles.chipText, primaryGoal === g && styles.chipTextActive]}>{g.replace('_', ' ')}</Text>
+                <Text style={[styles.chipText, primaryGoal === g && styles.chipTextActive]}>{goalLabel(g)}</Text>
               </Pressable>
             ))}
           </View>
-          <Text style={styles.goalExplain}>{goalExplanation(primaryGoal)}</Text>
+          <View style={styles.goalExplainRow}>
+            <Text style={styles.goalExplain}>{goalExplanation(primaryGoal)}</Text>
+            <GlossaryTip term={primaryGoal} />
+          </View>
         </Card>
 
         <Card style={styles.card}>
@@ -198,13 +217,26 @@ export default function GoalsScreen() {
             <Label>Session minutes</Label>
             <TextInput keyboardType="number-pad" value={sessionMinutes} onChangeText={setSessionMinutes} />
           </View>
-          <Label>Equipment</Label>
-          <View style={styles.wrap}>
-            {EQUIPMENT.map((e) => (
-              <Pressable key={e} onPress={() => setEquipment(e)} style={[styles.chip, equipment === e && styles.chipActive]}>
-                <Text style={[styles.chipText, equipment === e && styles.chipTextActive]}>{e.replace('_', ' ')}</Text>
-              </Pressable>
-            ))}
+          <View style={styles.field}>
+            <Label>Gyms & Equipment</Label>
+            <Text style={styles.gymSummaryText}>
+              Main gym:{' '}
+              <Text style={styles.gymSummaryHighlight}>
+                {mainGym
+                  ? `${mainGym.name} (${equipmentLabel(mainGym.base_preset)})`
+                  : equipmentLabel(equipment)}
+              </Text>
+            </Text>
+            <Text style={styles.gymSummarySub}>
+              Equipment presets, temporary visits, and exclusions are managed per gym profile.
+            </Text>
+            <View style={styles.manageBtnWrap}>
+              <Button
+                title="Manage gym profiles"
+                variant="secondary"
+                onPress={() => navigation.navigate('Settings', { screen: 'GymProfiles' })}
+              />
+            </View>
           </View>
           <View style={styles.field}>
             <Label>Injuries / notes</Label>
@@ -240,12 +272,18 @@ export default function GoalsScreen() {
         <Card style={styles.card}>
           <SectionTitle>Daily Nutrition</SectionTitle>
           <View style={styles.field}>
-            <Label>Calories (kcal)</Label>
+            <View style={styles.labelRow}>
+              <Label>Calories (kcal)</Label>
+              <GlossaryTip term="calorie_estimate" iconSize={16} style={styles.inlineTip} />
+            </View>
             <TextInput keyboardType="number-pad" value={calorieTarget} onChangeText={setCalorieTarget} />
           </View>
           <View style={styles.row}>
             <View style={styles.smallField}>
-              <Label>Protein (g)</Label>
+              <View style={styles.labelRow}>
+                <Label>Protein (g)</Label>
+                <GlossaryTip term="protein" iconSize={16} style={styles.inlineTip} />
+              </View>
               <TextInput keyboardType="number-pad" value={proteinTarget} onChangeText={setProteinTarget} />
             </View>
             <View style={styles.smallField}>
@@ -272,9 +310,12 @@ const styles = StyleSheet.create({
   field: { marginTop: spacing.sm },
   row: { flexDirection: 'row', marginTop: spacing.sm },
   smallField: { flex: 1, marginRight: spacing.sm },
+  labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xs },
+  inlineTip: { width: 32, height: 24 },
   savedMessage: { color: colors.accent, textAlign: 'center', marginBottom: spacing.sm },
   suggestNote: { ...typography.bodyMuted, marginTop: spacing.sm },
-  goalExplain: { ...typography.bodyMuted, marginTop: spacing.md, lineHeight: 20 },
+  goalExplainRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md, gap: spacing.xs },
+  goalExplain: { ...typography.bodyMuted, flex: 1, lineHeight: 20 },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', marginTop: spacing.sm },
   chip: {
     borderWidth: 1,
@@ -287,6 +328,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { color: colors.textMuted, fontWeight: '600', textTransform: 'capitalize' },
+  chipText: { color: colors.textMuted, fontWeight: '600' },
   chipTextActive: { color: colors.background },
+  hint: { ...typography.caption, color: colors.textMuted, marginTop: spacing.xs, marginBottom: spacing.sm },
+  gymSummaryText: { ...typography.body, color: colors.textMuted, marginTop: 4 },
+  gymSummaryHighlight: { color: colors.text, fontWeight: '700' },
+  gymSummarySub: { ...typography.caption, color: colors.textMuted, marginTop: 2, marginBottom: spacing.xs },
+  manageBtnWrap: { marginTop: spacing.xs },
 });

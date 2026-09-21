@@ -1,9 +1,12 @@
 ---
 name: qa-devices
 description: Validates FitTrack layout and behavior across web breakpoints, portrait/landscape, and iOS/Android vs web (safe area, keyboard, tabs, charts). Use when the user asks for device QA, responsive QA, tablet, phone, orientation, Expo Go, iOS, Android, or cross-device validation.
+model: gemini-3.7-flash-high
 ---
 
 # FitTrack devices QA
+
+Model: `gemini-3.7-flash-high` (execution). Pass this slug if you launch a Task subagent.
 
 Execute layout and platform checks. Do **not** re-run the full feature suite — that is [qa-functionality](../qa-functionality/SKILL.md). If a control is broken on every size, log it once and keep going.
 

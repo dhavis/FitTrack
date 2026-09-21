@@ -111,11 +111,11 @@ export function buildNutritionPlanFromGoals(opts: {
     : { breakfast_kcal: null, lunch_kcal: null, dinner_kcal: null, snack_kcal: null };
 
   const noteByGoal: Record<PrimaryGoalType, string> = {
-    fat_loss: 'Slight calorie deficit with higher protein to support fat loss while training.',
-    muscle_gain: 'Calorie surplus with high protein to support muscle gain.',
-    recomp: 'Near maintenance calories with high protein for body recomposition.',
-    strength: 'Maintenance-to-slight surplus to support strength training.',
-    general: 'Balanced maintenance-style nutrition plan.',
+    fat_loss: 'Slight calorie deficit with higher protein to preserve muscle while losing body fat.',
+    muscle_gain: 'Calorie surplus with high protein to support muscle recovery and growth.',
+    recomp: 'Near-maintenance calories with high protein to build muscle and lose body fat.',
+    strength: 'Steady calories and protein to fuel heavy training and recovery.',
+    general: 'Balanced maintenance calories and solid protein for overall fitness.',
   };
 
   const demo = demographicsLabel({
@@ -125,8 +125,8 @@ export function buildNutritionPlanFromGoals(opts: {
   });
   const method =
     opts.age != null && opts.gender != null
-      ? `Calories from Mifflin–St Jeor using ${demo} (maintenance ~${maintenance ?? '—'} kcal).`
-      : 'Set age and gender in Settings (or the preferences questionnaire) for a more accurate calorie estimate.';
+      ? `Estimated daily energy needs ~${maintenance ?? '—'} kcal based on your age, gender, and activity (${demo}).`
+      : 'Set age and gender in Settings for a more accurate calorie estimate.';
 
   return {
     daily_calorie_target: calories,

@@ -1,9 +1,12 @@
 ---
 name: ensure-app-running
 description: Validates whether the FitTrack Expo/Metro app is running for this repo, starts it if not, and opens it in the Cursor browser. Use when the user asks if the app is up, running, started, wants to launch/start Expo or FitTrack, or wants a preview in the Cursor browser / Simple Browser / Browser Tab.
+model: gemini-3.7-flash-high
 ---
 
 # Ensure FitTrack is running
+
+Model: `gemini-3.7-flash-high` (execution). Pass this slug if you launch a Task subagent.
 
 Confirm **this repo's** Expo/Metro server is up. Start it if it is not. Then open the web app in the **Cursor browser** (Browser Tab), not the system browser.
 

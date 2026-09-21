@@ -3,8 +3,16 @@ import { fetchExercisesByMuscle } from './exercises';
 import {
   EquipmentPref,
   ExperienceLevel,
+  GymProfileSnapshot,
   PrimaryGoalType,
 } from '../types/db';
+import {
+  equipmentAllowed,
+  GymPolicyTarget,
+  isExerciseAllowed,
+} from './equipmentPolicy';
+
+export { equipmentAllowed, isExerciseAllowed };
 
 export interface ProgramGeneratorInput {
   userId: string;
@@ -14,6 +22,9 @@ export interface ProgramGeneratorInput {
   equipment: EquipmentPref;
   sessionMinutes: number;
   injuryNotes?: string | null;
+  gymProfileId?: string | null;
+  gymProfileSnapshot?: GymProfileSnapshot | null;
+  gymPolicy?: GymPolicyTarget | null;
 }
 
 type DayTemplate = {
@@ -64,22 +75,18 @@ function defaultsForExperience(experience: ExperienceLevel) {
   return { sets: 3, reps: 8, rest: 90 };
 }
 
-function equipmentAllowed(pref: EquipmentPref, equipment: string | null) {
-  if (pref === 'mixed' || pref === 'full_gym') return true;
-  const eq = (equipment ?? '').toLowerCase();
-  if (pref === 'bodyweight') return !eq || eq.includes('body') || eq.includes('band');
-  if (pref === 'dumbbells') {
-    return !eq || eq.includes('dumbbell') || eq.includes('kettle') || eq.includes('body') || eq.includes('band');
-  }
-  return true;
-}
-
 export async function generateTrainingProgram(input: ProgramGeneratorInput) {
   const days = templatesFor(input.goalType, input.daysPerWeek);
   const allMuscles = Array.from(new Set(days.flatMap((d) => d.muscles)));
   const byMuscle = await fetchExercisesByMuscle(allMuscles, 10);
   const defaults = defaultsForExperience(input.experience);
   const exercisesPerDay = Math.max(4, Math.min(8, Math.floor(input.sessionMinutes / 12)));
+
+  const policy: GymPolicyTarget = input.gymPolicy ?? {
+    base_preset: input.equipment,
+    excluded_equipment: input.gymProfileSnapshot?.excluded_equipment ?? [],
+    excluded_exercise_ids: input.gymProfileSnapshot?.excluded_exercise_ids ?? [],
+  };
 
   const { data: program, error: programError } = await supabase
     .from('training_programs')
@@ -88,6 +95,8 @@ export async function generateTrainingProgram(input: ProgramGeneratorInput) {
       name: `${input.goalType.replace('_', ' ')} ${input.daysPerWeek}-day plan`,
       goal_type: input.goalType,
       generated_from: input,
+      gym_profile_id: input.gymProfileId ?? null,
+      gym_profile_snapshot: input.gymProfileSnapshot ?? null,
     })
     .select()
     .single();
@@ -100,7 +109,7 @@ export async function generateTrainingProgram(input: ProgramGeneratorInput) {
     const pool = day.muscles
       .flatMap((m) => byMuscle[m] ?? [])
       .filter((ex, idx, arr) => arr.findIndex((x) => x.id === ex.id) === idx)
-      .filter((ex) => equipmentAllowed(input.equipment, ex.equipment));
+      .filter((ex) => isExerciseAllowed(ex, policy));
 
     const selected = pool.slice(0, exercisesPerDay);
     if (!selected.length) continue;
@@ -120,9 +129,30 @@ export async function generateTrainingProgram(input: ProgramGeneratorInput) {
       throw new Error(routineError?.message ?? 'Failed to create routine');
     }
 
+    const blockRows = selected.map((_, index) => ({
+      routine_id: routine.id,
+      block_type: 'straight' as const,
+      name: 'Straight sets',
+      order_index: index,
+      target_rounds: defaults.sets,
+      rest_seconds: defaults.rest,
+    }));
+
+    const { data: createdBlocks, error: blocksError } = await supabase
+      .from('routine_blocks')
+      .insert(blockRows)
+      .select()
+      .order('order_index');
+
+    if (blocksError || !createdBlocks) {
+      throw new Error(blocksError?.message ?? 'Failed to create routine blocks');
+    }
+
     const rows = selected.map((ex, index) => ({
       routine_id: routine.id,
       exercise_id: ex.id,
+      block_id: createdBlocks[index].id,
+      block_position: 0,
       order_index: index,
       target_sets: defaults.sets,
       target_reps: defaults.reps,

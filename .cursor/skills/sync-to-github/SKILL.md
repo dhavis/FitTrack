@@ -1,9 +1,12 @@
 ---
 name: sync-to-github
 description: Reviews FitTrack code changes, then commits and pushes to GitHub. Use when the user says sync-to-github, sync to GitHub, push to GitHub, ship to GitHub, or asks to code-review and push.
+model: gemini-3.7-flash-high
 ---
 
 # Sync to GitHub
+
+Model: `gemini-3.7-flash-high` (execution). Pass this slug if you launch a Task subagent.
 
 Review the current FitTrack changes, then commit and push to GitHub. Invoking this skill **is** permission to commit and push. Do not wait for a second "please commit" or "please push".
 

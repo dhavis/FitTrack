@@ -1,10 +1,16 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import ActiveGymSwitcher from '../components/ActiveGymSwitcher';
 import { Button, Card, Label, ScreenContainer, SectionTitle, TextInput } from '../components/ui';
+import GlossaryTip from '../components/GlossaryTip';
 import { useAuth } from '../hooks/useAuth';
 import { invokeCoachGenerate } from '../lib/coachApi';
-import { goalExplanation } from '../lib/goalExplanations';
+import {
+  goalExplanation,
+  goalLabel,
+} from '../lib/goalExplanations';
+import { makeGymProfileSnapshot, resolveActiveGymProfile } from '../lib/gymProfiles';
 import { generateTrainingProgram } from '../lib/programGenerator';
 import { buildNutritionPlanFromGoals } from '../lib/nutritionPlan';
 import { generateMenu } from '../lib/menuGenerator';
@@ -12,13 +18,17 @@ import { DEFAULT_PREFERENCES, NutritionPreferences } from '../lib/nutritionPrefe
 import { supabase } from '../lib/supabase';
 import { WorkoutsStackParamList } from '../navigation/types';
 import { colors, spacing, typography } from '../theme/theme';
-import { EquipmentPref, ExperienceLevel, PrimaryGoalType } from '../types/db';
+import {
+  EquipmentPref,
+  ExperienceLevel,
+  PrimaryGoalType,
+  ResolvedGymProfile,
+} from '../types/db';
 
 type Props = NativeStackScreenProps<WorkoutsStackParamList, 'GeneratePlan'>;
 
 const GOALS: PrimaryGoalType[] = ['fat_loss', 'muscle_gain', 'recomp', 'strength', 'general'];
 const EXPERIENCE: ExperienceLevel[] = ['beginner', 'intermediate', 'advanced'];
-const EQUIPMENT: EquipmentPref[] = ['full_gym', 'dumbbells', 'bodyweight', 'mixed'];
 
 function Chip({
   label,
@@ -44,10 +54,13 @@ async function localFallbackCoach(opts: {
   equipment: EquipmentPref;
   sessionMinutes: number;
   injuryNotes: string | null;
+  activeGym?: ResolvedGymProfile | null;
   age?: number | null;
   gender?: 'male' | 'female' | 'other' | null;
   heightCm?: number | null;
 }) {
+  const gymSnapshot = opts.activeGym ? makeGymProfileSnapshot(opts.activeGym) : null;
+
   const program = await generateTrainingProgram({
     userId: opts.userId,
     goalType: opts.goalType,
@@ -56,6 +69,15 @@ async function localFallbackCoach(opts: {
     equipment: opts.equipment,
     sessionMinutes: opts.sessionMinutes,
     injuryNotes: opts.injuryNotes,
+    gymProfileId: opts.activeGym?.profile.id ?? null,
+    gymProfileSnapshot: gymSnapshot,
+    gymPolicy: opts.activeGym
+      ? {
+          base_preset: opts.activeGym.profile.base_preset,
+          excluded_equipment: opts.activeGym.excluded_equipment,
+          excluded_exercise_ids: opts.activeGym.excluded_exercise_ids,
+        }
+      : null,
   });
 
   const [{ data: goalsData }, { data: weightData }, { data: planData }, { data: profile }] = await Promise.all([
@@ -140,25 +162,34 @@ export default function GeneratePlanScreen({ navigation }: Props) {
   const [goalType, setGoalType] = useState<PrimaryGoalType>('general');
   const [experience, setExperience] = useState<ExperienceLevel>('beginner');
   const [days, setDays] = useState('4');
-  const [equipment, setEquipment] = useState<EquipmentPref>('full_gym');
   const [minutes, setMinutes] = useState('60');
   const [injuryNotes, setInjuryNotes] = useState('');
+  const [activeGym, setActiveGym] = useState<ResolvedGymProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
+  const loadActiveGym = useCallback(async () => {
+    try {
+      const resolved = await resolveActiveGymProfile();
+      setActiveGym(resolved);
+    } catch {
+      // Ignore background load error
+    }
+  }, []);
+
   useEffect(() => {
     if (!session) return;
+    loadActiveGym();
     (async () => {
       const { data } = await supabase.from('goals').select('*').eq('user_id', session.user.id).maybeSingle();
       if (data?.primary_goal_type) setGoalType(data.primary_goal_type);
       if (data?.experience) setExperience(data.experience);
       if (data?.days_per_week) setDays(String(data.days_per_week));
-      if (data?.equipment_pref) setEquipment(data.equipment_pref);
       if (data?.session_minutes) setMinutes(String(data.session_minutes));
       if (data?.injury_notes) setInjuryNotes(data.injury_notes);
     })();
-  }, [session]);
+  }, [session, loadActiveGym]);
 
   const handleGenerate = async () => {
     if (!session) return;
@@ -167,6 +198,7 @@ export default function GeneratePlanScreen({ navigation }: Props) {
     setInfo(null);
     const daysPerWeek = Math.min(Math.max(parseInt(days, 10) || 3, 2), 6);
     const sessionMinutes = parseInt(minutes, 10) || 60;
+    const currentEquipment: EquipmentPref = activeGym?.profile.base_preset ?? 'full_gym';
 
     try {
       await supabase.from('goals').upsert({
@@ -174,7 +206,7 @@ export default function GeneratePlanScreen({ navigation }: Props) {
         primary_goal_type: goalType,
         experience,
         days_per_week: daysPerWeek,
-        equipment_pref: equipment,
+        equipment_pref: currentEquipment,
         session_minutes: sessionMinutes,
         injury_notes: injuryNotes || null,
         weekly_workout_target: daysPerWeek,
@@ -187,7 +219,6 @@ export default function GeneratePlanScreen({ navigation }: Props) {
           goalType,
           experience,
           daysPerWeek,
-          equipment,
           sessionMinutes,
           injuryNotes: injuryNotes || null,
         });
@@ -205,9 +236,10 @@ export default function GeneratePlanScreen({ navigation }: Props) {
           goalType,
           experience,
           daysPerWeek,
-          equipment,
+          equipment: currentEquipment,
           sessionMinutes,
           injuryNotes: injuryNotes || null,
+          activeGym,
           age: profile?.age,
           gender: profile?.gender,
           heightCm: profile?.height_cm,
@@ -226,17 +258,20 @@ export default function GeneratePlanScreen({ navigation }: Props) {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={typography.h1}>Generate coach plan</Text>
         <Text style={typography.bodyMuted}>
-          Builds workouts and nutrition together from your goals, age/gender, and food preferences.
+          Builds workouts and nutrition together from your goals, active gym equipment, and food preferences.
         </Text>
 
         <Card style={styles.card}>
           <SectionTitle>Primary goal</SectionTitle>
           <View style={styles.wrap}>
             {GOALS.map((g) => (
-              <Chip key={g} label={g.replace('_', ' ')} active={goalType === g} onPress={() => setGoalType(g)} />
+              <Chip key={g} label={goalLabel(g)} active={goalType === g} onPress={() => setGoalType(g)} />
             ))}
           </View>
-          <Text style={styles.goalExplain}>{goalExplanation(goalType)}</Text>
+          <View style={styles.goalExplainRow}>
+            <Text style={styles.goalExplain}>{goalExplanation(goalType)}</Text>
+            <GlossaryTip term={goalType} />
+          </View>
         </Card>
 
         <Card style={styles.card}>
@@ -249,7 +284,17 @@ export default function GeneratePlanScreen({ navigation }: Props) {
         </Card>
 
         <Card style={styles.card}>
-          <SectionTitle>Schedule & equipment</SectionTitle>
+          <SectionTitle>Gym & Schedule</SectionTitle>
+          <Label>Active Gym Profile</Label>
+          <ActiveGymSwitcher
+            onManageGyms={() => {
+              navigation.getParent()?.navigate('Settings', { screen: 'GymProfiles' });
+            }}
+            onGymSwitched={(gym) => {
+              loadActiveGym();
+            }}
+          />
+
           <View style={styles.field}>
             <Label>Days per week</Label>
             <TextInput keyboardType="number-pad" value={days} onChangeText={setDays} />
@@ -257,12 +302,6 @@ export default function GeneratePlanScreen({ navigation }: Props) {
           <View style={styles.field}>
             <Label>Session minutes</Label>
             <TextInput keyboardType="number-pad" value={minutes} onChangeText={setMinutes} />
-          </View>
-          <Label>Equipment</Label>
-          <View style={styles.wrap}>
-            {EQUIPMENT.map((e) => (
-              <Chip key={e} label={e.replace('_', ' ')} active={equipment === e} onPress={() => setEquipment(e)} />
-            ))}
           </View>
           <View style={styles.field}>
             <Label>Injuries / limits (optional)</Label>
@@ -279,7 +318,8 @@ export default function GeneratePlanScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  goalExplain: { ...typography.bodyMuted, marginTop: spacing.md, lineHeight: 20 },
+  goalExplainRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md, gap: spacing.xs },
+  goalExplain: { ...typography.bodyMuted, flex: 1, lineHeight: 20 },
   content: { paddingBottom: spacing.xl },
   card: { marginTop: spacing.md },
   field: { marginTop: spacing.sm, marginBottom: spacing.sm },
@@ -295,8 +335,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { color: colors.textMuted, fontWeight: '600', textTransform: 'capitalize' },
+  chipText: { color: colors.textMuted, fontWeight: '600' },
   chipTextActive: { color: colors.background },
+  hint: { ...typography.caption, color: colors.textMuted, marginTop: spacing.xs, marginBottom: spacing.sm },
   error: { color: colors.danger, marginVertical: spacing.sm },
   info: { color: colors.accent, marginVertical: spacing.sm },
 });

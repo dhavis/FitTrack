@@ -3,11 +3,12 @@ import React, { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card, Label, ScreenContainer } from '../components/ui';
 import { useAuth } from '../hooks/useAuth';
+import { fetchTodayCheckIn } from '../lib/adaptationApi';
 import { fetchActiveCoachPlan } from '../lib/coachApi';
 import { supabase } from '../lib/supabase';
 import { displayLength, formatWeight } from '../lib/units';
-import { colors, spacing, typography } from '../theme/theme';
-import { BodyMeasurement, CoachPlan, Goals, WeightLog } from '../types/db';
+import { colors, radii, spacing, typography } from '../theme/theme';
+import { BodyMeasurement, CoachPlan, DailyCheckIn, Goals, WeightLog } from '../types/db';
 
 function startOfWeekISO(): string {
   const now = new Date();
@@ -33,37 +34,48 @@ export default function DashboardScreen() {
   const [workoutsThisWeek, setWorkoutsThisWeek] = useState(0);
   const [caloriesToday, setCaloriesToday] = useState(0);
   const [coachPlan, setCoachPlan] = useState<CoachPlan | null>(null);
+  const [todayCheckIn, setTodayCheckIn] = useState<DailyCheckIn | null>(null);
 
   const load = useCallback(async () => {
     if (!session) return;
-    const [{ data: weightData }, { data: goalsData }, { count }, { data: foodData }, { data: mData }] =
-      await Promise.all([
-        supabase
-          .from('weight_logs')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .order('logged_at', { ascending: false })
-          .limit(1),
-        supabase.from('goals').select('*').eq('user_id', session.user.id).maybeSingle(),
-        supabase
-          .from('workouts')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', session.user.id)
-          .not('completed_at', 'is', null)
-          .gte('started_at', startOfWeekISO()),
-        supabase.from('food_logs').select('calories').eq('user_id', session.user.id).eq('logged_at', todayString()),
-        supabase
-          .from('body_measurements')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .order('logged_at', { ascending: false })
-          .limit(1),
-      ]);
+    const [
+      { data: weightData },
+      { data: goalsData },
+      { count },
+      { data: foodData },
+      { data: mData },
+      checkInRes,
+    ] = await Promise.all([
+      supabase
+        .from('weight_logs')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('logged_at', { ascending: false })
+        .limit(1),
+      supabase.from('goals').select('*').eq('user_id', session.user.id).maybeSingle(),
+      supabase
+        .from('workouts')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', session.user.id)
+        .not('completed_at', 'is', null)
+        .gte('started_at', startOfWeekISO()),
+      supabase.from('food_logs').select('calories').eq('user_id', session.user.id).eq('logged_at', todayString()),
+      supabase
+        .from('body_measurements')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('logged_at', { ascending: false })
+        .limit(1),
+      fetchTodayCheckIn(session.user.id).catch(() => null),
+    ]);
+
     setLatestWeight(weightData?.[0] ?? null);
     setGoals(goalsData ?? null);
     setWorkoutsThisWeek(count ?? 0);
     setCaloriesToday((foodData ?? []).reduce((sum, f) => sum + f.calories, 0));
     setLatestMeasurement(mData?.[0] ?? null);
+    setTodayCheckIn(checkInRes ?? null);
+
     try {
       const plan = await fetchActiveCoachPlan();
       setCoachPlan((plan as CoachPlan) ?? null);
@@ -99,6 +111,29 @@ export default function DashboardScreen() {
             ) : null}
           </Card>
         ) : null}
+
+        {todayCheckIn && (
+          <Card
+            style={[
+              styles.readinessCard,
+              todayCheckIn.pain_or_new_injury && styles.safetyReadinessCard,
+            ]}
+          >
+            <Label>Today's Readiness</Label>
+            {todayCheckIn.pain_or_new_injury ? (
+              <Text style={[typography.body, { color: colors.danger, fontWeight: '600' }]}>
+                ⚠️ Safety hold active (pain or injury flagged)
+              </Text>
+            ) : (
+              <Text style={typography.body}>
+                Soreness: {todayCheckIn.overall_soreness}/4 • Energy: {todayCheckIn.energy}/5 • Tiredness: {todayCheckIn.tiredness}/5
+              </Text>
+            )}
+            {todayCheckIn.recovery_note && (
+              <Text style={typography.caption}>Note: {todayCheckIn.recovery_note}</Text>
+            )}
+          </Card>
+        )}
 
         <View style={styles.grid}>
           <Card style={styles.gridCard}>
@@ -149,6 +184,15 @@ const styles = StyleSheet.create({
   content: { paddingBottom: spacing.xl },
   coachCard: { marginTop: spacing.md, borderColor: colors.primary },
   coachTip: { marginTop: spacing.sm },
+  readinessCard: {
+    marginTop: spacing.md,
+    borderColor: colors.accent,
+    backgroundColor: colors.surfaceAlt,
+  },
+  safetyReadinessCard: {
+    borderColor: colors.danger,
+    backgroundColor: '#261214',
+  },
   grid: { marginTop: spacing.lg },
   gridCard: { marginBottom: spacing.md },
 });

@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React from 'react';
 import DashboardScreen from '../screens/DashboardScreen';
 import GoalsScreen from '../screens/GoalsScreen';
-import SettingsScreen from '../screens/SettingsScreen';
+import SettingsNavigator from './SettingsNavigator';
 import { colors } from '../theme/theme';
 import NutritionNavigator from './NutritionNavigator';
 import { MainTabParamList } from './types';
@@ -39,7 +39,7 @@ export default function MainTabs() {
       <Tab.Screen name="Workouts" component={WorkoutsNavigator} />
       <Tab.Screen name="Nutrition" component={NutritionNavigator} />
       <Tab.Screen name="Goals" component={GoalsScreen} />
-      <Tab.Screen name="Settings" component={SettingsScreen} />
+      <Tab.Screen name="Settings" component={SettingsNavigator} />
     </Tab.Navigator>
   );
 }

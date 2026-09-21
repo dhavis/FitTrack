@@ -2,6 +2,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Card, Label, ScreenContainer, SectionTitle, TextInput } from '../components/ui';
+import GlossaryTip from '../components/GlossaryTip';
 import { useAuth } from '../hooks/useAuth';
 import { generateMenu } from '../lib/menuGenerator';
 import { displayLength, toStorageLengthCm } from '../lib/units';
@@ -166,9 +167,12 @@ export default function NutritionPreferencesScreen({ navigation }: Props) {
         return (
           <>
             <SectionTitle>About you</SectionTitle>
-            <Text style={typography.bodyMuted}>
-              Age and gender adjust calorie needs (Mifflin–St Jeor). Height improves accuracy.
-            </Text>
+            <View style={styles.explainRow}>
+              <Text style={styles.explainText}>
+                Age and gender help estimate how much energy your body uses each day. Height improves accuracy.
+              </Text>
+              <GlossaryTip term="calorie_estimate" />
+            </View>
             <View style={styles.field}>
               <Label>Age</Label>
               <TextInput keyboardType="number-pad" value={age} onChangeText={setAge} placeholder="Years" />
@@ -498,6 +502,8 @@ const styles = StyleSheet.create({
   },
   progressFill: { height: 6, backgroundColor: colors.primary },
   card: { marginTop: spacing.md },
+  explainRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs, marginBottom: spacing.xs },
+  explainText: { ...typography.bodyMuted, flex: 1, lineHeight: 20 },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', marginTop: spacing.sm },
   stack: { marginTop: spacing.sm },
   chip: {

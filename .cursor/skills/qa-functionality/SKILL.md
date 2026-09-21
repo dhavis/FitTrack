@@ -1,9 +1,12 @@
 ---
 name: qa-functionality
 description: Walks FitTrack user flows in the running app and reports functional bugs (auth, dashboard, weight, workouts, nutrition, goals, settings). Use when the user asks for functionality QA, feature QA, smoke test, regression test, or to test if the app works.
+model: gemini-3.7-flash-high
 ---
 
 # FitTrack functionality QA
+
+Model: `gemini-3.7-flash-high` (execution). Pass this slug if you launch a Task subagent.
 
 Execute a live walkthrough of product behavior. Do **not** test viewports, rotation, or iOS/Android chrome here — that is [qa-devices](../qa-devices/SKILL.md).
 

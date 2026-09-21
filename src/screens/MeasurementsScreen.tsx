@@ -138,6 +138,15 @@ export default function MeasurementsScreen() {
                 <Button title="Save measurements" onPress={handleSave} loading={saving} />
               </View>
             </Card>
+            <Card style={styles.connectedCard}>
+              <Text style={typography.h3}>Connected devices — coming later</Text>
+              <Text style={styles.connectedBody}>
+                In the future, you’ll be able to bring in readings from home smart scales and gym or clinic machines. HealthKit and Google Fit may also serve as connection hubs.
+              </Text>
+              <Text style={styles.connectedDisclaimer}>
+                Device readings are estimates, not medical advice.
+              </Text>
+            </Card>
             <SectionTitle>History</SectionTitle>
           </View>
         }
@@ -164,6 +173,18 @@ export default function MeasurementsScreen() {
 const styles = StyleSheet.create({
   content: { paddingBottom: spacing.xl },
   card: { marginTop: spacing.md, marginBottom: spacing.md },
+  connectedCard: { marginBottom: spacing.md },
+  connectedBody: {
+    ...typography.body,
+    marginTop: spacing.sm,
+    lineHeight: 21,
+  },
+  connectedDisclaimer: {
+    ...typography.caption,
+    marginTop: spacing.sm,
+    color: colors.textMuted,
+    lineHeight: 16,
+  },
   field: { marginTop: spacing.sm },
   row: { flexDirection: 'row', marginTop: spacing.sm },
   half: { flex: 1, marginRight: spacing.sm },

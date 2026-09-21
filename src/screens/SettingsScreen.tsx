@@ -1,11 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Card, Label, ScreenContainer, SectionTitle, TextInput } from '../components/ui';
+import GlossaryTip from '../components/GlossaryTip';
 import { useAuth } from '../hooks/useAuth';
+import { equipmentLabel } from '../lib/goalExplanations';
+import { fetchUserGymProfiles, resolveActiveGymProfile } from '../lib/gymProfiles';
 import { displayLength, toStorageLengthCm } from '../lib/units';
 import { supabase } from '../lib/supabase';
+import { SettingsStackParamList } from '../navigation/types';
 import { colors, spacing, typography } from '../theme/theme';
-import { Gender, LengthUnit, WeightUnit } from '../types/db';
+import { Gender, GymProfile, LengthUnit, ResolvedGymProfile, WeightUnit } from '../types/db';
+
+type NavProp = NativeStackNavigationProp<SettingsStackParamList, 'SettingsHome'>;
 
 const GENDERS: { id: Gender; label: string }[] = [
   { id: 'male', label: 'Male' },
@@ -14,6 +22,7 @@ const GENDERS: { id: Gender; label: string }[] = [
 ];
 
 export default function SettingsScreen() {
+  const navigation = useNavigation<NavProp>();
   const { session, profile, refreshProfile, signOut } = useAuth();
   const unit = profile?.weight_unit ?? 'kg';
   const lengthUnit = profile?.length_unit ?? 'cm';
@@ -25,6 +34,29 @@ export default function SettingsScreen() {
   );
   const [saving, setSaving] = useState(false);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
+
+  const [activeGym, setActiveGym] = useState<ResolvedGymProfile | null>(null);
+  const [mainGym, setMainGym] = useState<GymProfile | null>(null);
+
+  const loadGyms = useCallback(async () => {
+    if (!session?.user?.id) return;
+    try {
+      const [resolved, allGyms] = await Promise.all([
+        resolveActiveGymProfile(),
+        fetchUserGymProfiles(false),
+      ]);
+      setActiveGym(resolved);
+      setMainGym(allGyms.find((g) => g.is_main) ?? null);
+    } catch {
+      // Ignore background error
+    }
+  }, [session?.user?.id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadGyms();
+    }, [loadGyms])
+  );
 
   useEffect(() => {
     setDisplayName(profile?.display_name ?? '');
@@ -88,7 +120,10 @@ export default function SettingsScreen() {
 
           <View style={styles.field}>
             <Label>Gender</Label>
-            <Text style={typography.bodyMuted}>Adjusts BMR (Mifflin–St Jeor) and some goal suggestions.</Text>
+            <View style={styles.explainRow}>
+              <Text style={styles.explainText}>Age and gender help estimate how much energy your body uses each day.</Text>
+              <GlossaryTip term="calorie_estimate" />
+            </View>
             <View style={styles.wrap}>
               {GENDERS.map((g) => (
                 <Pressable
@@ -116,6 +151,33 @@ export default function SettingsScreen() {
             <Button title="Save profile" onPress={saveProfile} loading={saving} />
           </View>
           {savedMessage && <Text style={styles.saved}>{savedMessage}</Text>}
+        </Card>
+
+        <Card style={styles.card}>
+          <SectionTitle>Gyms & equipment</SectionTitle>
+          <Text style={styles.gymInfoLine}>
+            Main gym:{' '}
+            <Text style={styles.gymInfoValue}>
+              {mainGym ? `${mainGym.name} (${equipmentLabel(mainGym.base_preset)})` : 'Not set'}
+            </Text>
+          </Text>
+          <Text style={styles.gymInfoLine}>
+            Active gym:{' '}
+            <Text style={styles.gymInfoValue}>
+              {activeGym?.profile
+                ? `${activeGym.profile.name} (${equipmentLabel(activeGym.profile.base_preset)})${
+                    activeGym.profile.kind === 'temporary' ? ' · Temporary visit' : ''
+                  }`
+                : 'Resolving...'}
+            </Text>
+          </Text>
+          <View style={styles.field}>
+            <Button
+              title="Manage gym profiles"
+              variant="secondary"
+              onPress={() => navigation.navigate('GymProfiles')}
+            />
+          </View>
         </Card>
 
         <Card style={styles.card}>
@@ -174,6 +236,8 @@ const styles = StyleSheet.create({
   content: { paddingBottom: spacing.xl },
   card: { marginTop: spacing.md },
   field: { marginTop: spacing.md },
+  explainRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs, marginBottom: spacing.xs },
+  explainText: { ...typography.bodyMuted, flex: 1, lineHeight: 20 },
   row: { flexDirection: 'row', gap: spacing.sm },
   flexButton: { flex: 1 },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', marginTop: spacing.sm },
@@ -191,4 +255,6 @@ const styles = StyleSheet.create({
   chipText: { color: colors.textMuted, fontWeight: '600' },
   chipTextActive: { color: colors.background },
   saved: { color: colors.accent, marginTop: spacing.sm },
+  gymInfoLine: { ...typography.body, color: colors.textMuted, marginBottom: 4 },
+  gymInfoValue: { color: colors.text, fontWeight: '600' },
 });

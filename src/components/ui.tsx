@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
+  StyleProp,
   StyleSheet,
   Text,
   TextInput as RNTextInput,
   TextInputProps,
+  TextStyle,
   View,
   ViewProps,
 } from 'react-native';
@@ -82,8 +84,14 @@ export function Label({ children }: { children: React.ReactNode }) {
   return <Text style={styles.label}>{children}</Text>;
 }
 
-export function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <Text style={styles.sectionTitle}>{children}</Text>;
+export function SectionTitle({
+  children,
+  style,
+}: {
+  children: React.ReactNode;
+  style?: StyleProp<TextStyle>;
+}) {
+  return <Text style={[styles.sectionTitle, style]}>{children}</Text>;
 }
 
 export function EmptyState({ message }: { message: string }) {

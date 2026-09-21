@@ -1,3 +1,5 @@
+import { EquipmentType } from '../types/db';
+
 export type AuthStackParamList = {
   Login: undefined;
   SignUp: undefined;
@@ -12,13 +14,30 @@ export type NutritionStackParamList = {
   FoodSearch: { mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack' };
 };
 
+export type SettingsStackParamList = {
+  SettingsHome: undefined;
+  GymProfiles: undefined;
+  GymProfileEditor: { profileId?: string; isTemporary?: boolean } | undefined;
+  GymExclusions:
+    | {
+        profileId?: string;
+        excludedEquipment?: EquipmentType[];
+        excludedExerciseIds?: string[];
+        onSave?: (result: {
+          excludedEquipment: EquipmentType[];
+          excludedExerciseIds: string[];
+        }) => void;
+      }
+    | undefined;
+};
+
 export type MainTabParamList = {
   Dashboard: undefined;
   Weight: undefined;
   Workouts: undefined;
   Nutrition: { screen: keyof NutritionStackParamList; params?: object } | undefined;
   Goals: undefined;
-  Settings: undefined;
+  Settings: { screen: keyof SettingsStackParamList; params?: object } | undefined;
 };
 
 export type WorkoutsStackParamList = {
@@ -27,6 +46,8 @@ export type WorkoutsStackParamList = {
   ActiveWorkout: { workoutId: string };
   ExerciseLibrary: undefined;
   GeneratePlan: undefined;
+  DailyReadiness: { routineId: string };
+  SessionAdaptationReview: { eventId: string };
   CoachResult: {
     coaching: {
       weekly_coaching: string;

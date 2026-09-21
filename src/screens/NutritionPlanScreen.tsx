@@ -2,6 +2,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Card, Label, ScreenContainer, SectionTitle, TextInput } from '../components/ui';
+import GlossaryTip from '../components/GlossaryTip';
 import { useAuth } from '../hooks/useAuth';
 import { invokeCoachGenerate } from '../lib/coachApi';
 import {
@@ -280,12 +281,18 @@ export default function NutritionPlanScreen({ navigation }: Props) {
         <Card style={styles.card}>
           <SectionTitle>Daily targets</SectionTitle>
           <View style={styles.field}>
-            <Label>Calories (kcal)</Label>
+            <View style={styles.labelRow}>
+              <Label>Calories (kcal)</Label>
+              <GlossaryTip term="calorie_estimate" iconSize={16} style={styles.inlineTip} />
+            </View>
             <TextInput keyboardType="number-pad" value={calories} onChangeText={setCalories} />
           </View>
           <View style={styles.row}>
             <View style={styles.smallField}>
-              <Label>Protein (g)</Label>
+              <View style={styles.labelRow}>
+                <Label>Protein (g)</Label>
+                <GlossaryTip term="protein" iconSize={16} style={styles.inlineTip} />
+              </View>
               <TextInput keyboardType="decimal-pad" value={protein} onChangeText={setProtein} />
             </View>
             <View style={styles.smallField}>
@@ -317,17 +324,23 @@ export default function NutritionPlanScreen({ navigation }: Props) {
               <TextInput keyboardType="number-pad" value={mealsPerDay} onChangeText={setMealsPerDay} />
             </View>
             <View style={styles.smallField}>
-              <Label>Protein g/kg</Label>
+              <View style={styles.labelRow}>
+                <Label>Protein (g/kg)</Label>
+                <GlossaryTip term="protein" iconSize={16} style={styles.inlineTip} />
+              </View>
               <TextInput keyboardType="decimal-pad" value={proteinPerKg} onChangeText={setProteinPerKg} />
             </View>
-            <View style={styles.smallField}>
-              <Label>Cal adj %</Label>
-              <TextInput keyboardType="decimal-pad" value={adjustmentPct} onChangeText={setAdjustmentPct} />
-            </View>
           </View>
-          <Text style={[typography.caption, styles.hint]}>
-            Cal adj % is relative to maintenance (negative = deficit, positive = surplus).
-          </Text>
+          <View style={styles.field}>
+            <View style={styles.labelRow}>
+              <Label>Calorie change from maintenance (%)</Label>
+              <GlossaryTip term="deficit" iconSize={16} style={styles.inlineTip} />
+            </View>
+            <TextInput keyboardType="decimal-pad" value={adjustmentPct} onChangeText={setAdjustmentPct} placeholder="e.g. -15 or +10" />
+            <Text style={[typography.caption, styles.hint]}>
+              Relative to maintenance: negative is a deficit (fat loss), positive is a surplus (muscle gain).
+            </Text>
+          </View>
         </Card>
 
         <Card style={styles.card}>
@@ -382,7 +395,9 @@ const styles = StyleSheet.create({
   field: { marginTop: spacing.sm },
   row: { flexDirection: 'row', marginTop: spacing.sm },
   smallField: { flex: 1, marginRight: spacing.sm },
-  hint: { marginTop: spacing.sm, color: colors.textMuted },
+  labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xs },
+  inlineTip: { width: 32, height: 24 },
+  hint: { marginTop: spacing.xs, color: colors.textMuted },
   notes: { minHeight: 88, textAlignVertical: 'top', marginTop: spacing.sm },
   message: { color: colors.accent, textAlign: 'center', marginVertical: spacing.sm },
   error: { color: colors.danger, textAlign: 'center', marginVertical: spacing.sm },

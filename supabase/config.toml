@@ -1,2 +1,5 @@
 [functions.coach-generate]
 verify_jwt = true
+
+[functions.coach-adapt]
+verify_jwt = true

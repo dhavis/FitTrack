@@ -5,12 +5,12 @@ import { DEFAULT_PREFERENCES, NutritionPreferences } from '../_shared/nutritionP
 import { buildNutritionPlanFromGoals } from '../_shared/nutritionPlan.ts';
 import {
   defaultsForExperience,
-  equipmentAllowed,
   templatesFor,
   type EquipmentPref,
   type ExperienceLevel,
   type PrimaryGoalType,
 } from '../_shared/programTemplates.ts';
+import { isExerciseAllowed } from '../_shared/equipmentPolicy.ts';
 import { generateCoachingWithLlm, PROMPT_VERSION } from '../_shared/llm.ts';
 
 type Mode = 'full' | 'nutrition_only' | 'training_only';
@@ -79,6 +79,7 @@ Deno.serve(async (req) => {
       { data: weightRows },
       { data: nutritionPlanExisting },
       { data: recentWorkouts },
+      { data: resolvedGymData },
     ] = await Promise.all([
       admin.from('profiles').select('*').eq('id', userId).maybeSingle(),
       admin.from('goals').select('*').eq('user_id', userId).maybeSingle(),
@@ -96,7 +97,12 @@ Deno.serve(async (req) => {
         .not('completed_at', 'is', null)
         .order('completed_at', { ascending: false })
         .limit(7),
+      userClient.rpc('resolve_active_gym_profile'),
     ]);
+
+    const activeProfile = (resolvedGymData as any)?.profile;
+    const excludedEquipment = (resolvedGymData as any)?.excluded_equipment ?? [];
+    const excludedExerciseIds = (resolvedGymData as any)?.excluded_exercise_ids ?? [];
 
     const goalType: PrimaryGoalType =
       body.goalType ?? goalsExisting?.primary_goal_type ?? 'general';
@@ -107,10 +113,28 @@ Deno.serve(async (req) => {
       6
     );
     const equipment: EquipmentPref =
-      body.equipment ?? goalsExisting?.equipment_pref ?? 'full_gym';
+      activeProfile?.base_preset ?? goalsExisting?.equipment_pref ?? 'full_gym';
     const sessionMinutes = body.sessionMinutes ?? goalsExisting?.session_minutes ?? 60;
     const injuryNotes = body.injuryNotes ?? goalsExisting?.injury_notes ?? null;
     const weightKg = weightRows?.[0]?.weight_kg ?? goalsExisting?.target_weight_kg ?? null;
+
+    const gymPolicy = {
+      base_preset: equipment,
+      excluded_equipment: excludedEquipment,
+      excluded_exercise_ids: excludedExerciseIds,
+    };
+
+    const gymProfileSnapshot = activeProfile
+      ? {
+          id: activeProfile.id,
+          name: activeProfile.name,
+          base_preset: activeProfile.base_preset,
+          kind: activeProfile.kind,
+          is_main: activeProfile.is_main,
+          excluded_equipment: excludedEquipment,
+          excluded_exercise_ids: excludedExerciseIds,
+        }
+      : null;
 
     // Upsert goals training fields when generating
     await admin.from('goals').upsert({
@@ -185,6 +209,8 @@ Deno.serve(async (req) => {
           user_id: userId,
           name: `${goalType.replace('_', ' ')} ${daysPerWeek}-day coach plan`,
           goal_type: goalType,
+          gym_profile_id: activeProfile?.id ?? null,
+          gym_profile_snapshot: gymProfileSnapshot,
           generated_from: {
             source: 'coach-generate',
             goalType,
@@ -207,7 +233,7 @@ Deno.serve(async (req) => {
         const pool = day.muscles
           .flatMap((m) => byMuscle[m] ?? [])
           .filter((ex, idx, arr) => arr.findIndex((x) => x.id === ex.id) === idx)
-          .filter((ex) => equipmentAllowed(equipment, ex.equipment));
+          .filter((ex) => isExerciseAllowed(ex, gymPolicy));
 
         // Light injury filter: drop names matching keywords in injury notes
         const injury = (injuryNotes ?? '').toLowerCase();
@@ -241,9 +267,30 @@ Deno.serve(async (req) => {
         routineIds.push(routine.id);
         routineNames.push(routine.name);
 
+        const blockRows = selected.map((_, index) => ({
+          routine_id: routine.id,
+          block_type: 'straight' as const,
+          name: 'Straight sets',
+          order_index: index,
+          target_rounds: defaults.sets,
+          rest_seconds: defaults.rest,
+        }));
+
+        const { data: createdBlocks, error: blocksError } = await admin
+          .from('routine_blocks')
+          .insert(blockRows)
+          .select()
+          .order('order_index');
+
+        if (blocksError || !createdBlocks) {
+          throw new Error(blocksError?.message ?? 'Failed to create routine blocks');
+        }
+
         const rows = selected.map((ex, index) => ({
           routine_id: routine.id,
           exercise_id: ex.id,
+          block_id: createdBlocks[index].id,
+          block_position: 0,
           order_index: index,
           target_sets: defaults.sets,
           target_reps: defaults.reps,
@@ -376,6 +423,7 @@ Deno.serve(async (req) => {
         context_snapshot: contextSnapshot,
         training_summary: trainingSummary,
         nutrition_summary: nutritionSummary,
+        gym_profile_snapshot: gymProfileSnapshot,
         coaching_copy: coachingCopy,
         model: modelUsed,
         prompt_version: PROMPT_VERSION,

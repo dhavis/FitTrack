@@ -1,6 +1,14 @@
+import {
+  EquipmentPref,
+  equipmentAllowed,
+  isExerciseAllowed,
+} from './equipmentPolicy.ts';
+
+export type { EquipmentPref };
+export { equipmentAllowed, isExerciseAllowed };
+
 export type PrimaryGoalType = 'fat_loss' | 'muscle_gain' | 'recomp' | 'strength' | 'general';
 export type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced';
-export type EquipmentPref = 'full_gym' | 'dumbbells' | 'bodyweight' | 'mixed';
 
 export type DayTemplate = {
   name: string;
@@ -48,14 +56,4 @@ export function defaultsForExperience(experience: ExperienceLevel) {
   if (experience === 'beginner') return { sets: 3, reps: 10, rest: 90 };
   if (experience === 'advanced') return { sets: 4, reps: 6, rest: 120 };
   return { sets: 3, reps: 8, rest: 90 };
-}
-
-export function equipmentAllowed(pref: EquipmentPref, equipment: string | null) {
-  if (pref === 'mixed' || pref === 'full_gym') return true;
-  const eq = (equipment ?? '').toLowerCase();
-  if (pref === 'bodyweight') return !eq || eq.includes('body') || eq.includes('band');
-  if (pref === 'dumbbells') {
-    return !eq || eq.includes('dumbbell') || eq.includes('kettle') || eq.includes('body') || eq.includes('band');
-  }
-  return true;
 }
