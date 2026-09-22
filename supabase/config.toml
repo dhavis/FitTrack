@@ -3,3 +3,21 @@ verify_jwt = true
 
 [functions.coach-adapt]
 verify_jwt = true
+
+[auth]
+site_url = "https://dhavis.github.io/FitTrack"
+additional_redirect_urls = [
+  "https://dhavis.github.io/FitTrack",
+  "https://dhavis.github.io/FitTrack/**",
+  "http://localhost:8081",
+  "http://localhost:8081/**",
+  "http://localhost:8082",
+  "http://localhost:8082/**",
+  "http://127.0.0.1:8081",
+  "http://127.0.0.1:8081/**",
+  "http://127.0.0.1:8082",
+  "http://127.0.0.1:8082/**"
+]
+
+[storage.vector]
+enabled = false
