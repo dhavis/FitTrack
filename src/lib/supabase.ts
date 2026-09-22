@@ -29,10 +29,22 @@ export const supabase = createClient(supabaseUrl || 'https://placeholder.supabas
   },
 });
 
-/** Origin (web) or undefined so GoTrue falls back to the project Site URL. */
+function getWebBasePath(): string {
+  const envPath = process.env.EXPO_PUBLIC_WEB_BASE_PATH?.trim();
+  if (envPath) {
+    const withLeading = envPath.startsWith('/') ? envPath : `/${envPath}`;
+    return withLeading.replace(/\/+$/, '');
+  }
+  if (typeof window !== 'undefined' && window.location?.pathname?.startsWith('/FitTrack')) {
+    return '/FitTrack';
+  }
+  return '';
+}
+
+/** Origin + basePath (web) or undefined so GoTrue falls back to the project Site URL. */
 export function getAuthRedirectUrl(): string | undefined {
   if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location?.origin) {
-    return window.location.origin;
+    return `${window.location.origin}${getWebBasePath()}`;
   }
   return undefined;
 }
