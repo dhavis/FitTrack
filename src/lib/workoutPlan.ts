@@ -16,6 +16,7 @@ import {
   WorkoutSet,
 } from '../types/db';
 import { MachineBlock, MachineDropStep, MachineExercise } from './liveWorkoutMachine';
+import { legacyPlannedSets, parsePlannedSets } from './plannedSets';
 
 export interface RoutineBlockDraft {
   tempId: string;
@@ -24,6 +25,13 @@ export interface RoutineBlockDraft {
   target_rounds: string;
   rest_seconds: string;
   exercises: RoutineExerciseDraft[];
+}
+
+export interface DraftSet {
+  key: string;
+  kind: 'regular' | 'drop';
+  reps: string;
+  weight: string;
 }
 
 export interface RoutineExerciseDraft {
@@ -35,6 +43,25 @@ export interface RoutineExerciseDraft {
   weight_unit: WeightUnit | null;
   rest_seconds: string;
   drop_steps: RoutineDropStepDraft[];
+  sets: DraftSet[];
+}
+
+export function draftSetsFromExercise(
+  id: string,
+  targetSets: number,
+  targetReps: number,
+  targetWeightKg: number | null,
+  drops: { target_reps: number; target_weight_kg: number | null }[],
+  planned: unknown,
+  displayUnit: WeightUnit
+): DraftSet[] {
+  const source = parsePlannedSets(planned) ?? legacyPlannedSets(targetSets, targetReps, targetWeightKg, drops);
+  return source.map((set, index) => ({
+    key: `${id}-${set.kind}-${index}`,
+    kind: set.kind,
+    reps: String(set.reps),
+    weight: set.weight_kg != null ? String(displayWeight(set.weight_kg, displayUnit)) : '',
+  }));
 }
 
 export interface RoutineDropStepDraft {
@@ -131,6 +158,7 @@ export async function fetchWorkoutPlan(workoutId: string): Promise<{
       rest_seconds: pe.rest_seconds,
       exercise: pe.exercise as Exercise,
       drop_steps: dropsByExId.get(pe.id) ?? [],
+      planned_sets: parsePlannedSets(pe.planned_sets),
     });
     exercisesByBlockId.set(pe.plan_block_id, list);
   });
@@ -224,10 +252,24 @@ export async function fetchRoutineWithBlocks(
       exercise: re.exercise as Exercise,
       target_sets: String(re.target_sets),
       target_reps: String(re.target_reps),
-      target_weight: re.target_weight_kg != null ? String(displayWeight(re.target_weight_kg, unit)) : '',
-      weight_unit: re.weight_unit ?? null,
+      target_weight: re.target_weight_kg != null ? String(displayWeight(re.target_weight_kg, displayUnit)) : '',
+      weight_unit: null,
       rest_seconds: String(re.rest_seconds),
       drop_steps: dropsByReId.get(re.id) ?? [],
+      sets: draftSetsFromExercise(
+        re.id,
+        re.target_sets,
+        re.target_reps,
+        re.target_weight_kg,
+        dbDrops
+          .filter((drop) => drop.routine_exercise_id === re.id)
+          .map((drop) => ({
+            target_reps: drop.target_reps,
+            target_weight_kg: drop.target_weight_kg,
+          })),
+        re.planned_sets,
+        displayUnit
+      ),
     });
     exercisesByBlockId.set(blockId, list);
   });
@@ -264,6 +306,20 @@ export async function fetchRoutineWithBlocks(
           weight_unit: re.weight_unit ?? null,
           rest_seconds: String(re.rest_seconds),
           drop_steps: dropsByReId.get(re.id) ?? [],
+          sets: draftSetsFromExercise(
+            re.id,
+            re.target_sets,
+            re.target_reps,
+            re.target_weight_kg,
+            dbDrops
+              .filter((drop) => drop.routine_exercise_id === re.id)
+              .map((drop) => ({
+                target_reps: drop.target_reps,
+                target_weight_kg: drop.target_weight_kg,
+              })),
+            re.planned_sets,
+            displayUnit
+          ),
         },
       ],
     };

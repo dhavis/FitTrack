@@ -1,14 +1,16 @@
 export const colors = {
-  background: '#0B0D10',
-  surface: '#16191D',
-  surfaceAlt: '#1E2228',
-  border: '#2A2F36',
-  primary: '#FF5A1F',
-  primaryMuted: '#3A2A22',
-  accent: '#3DDC97',
-  text: '#F5F6F7',
-  textMuted: '#9AA1A9',
-  textFaint: '#5C636B',
+  background: '#04111C',
+  surface: '#12242F',
+  surfaceAlt: '#0C1A22',
+  border: 'rgba(238, 244, 246, 0.22)',
+  highlight: 'rgba(255, 255, 255, 0.16)',
+  primary: '#E8F1FF',
+  primaryForeground: '#06121A',
+  primaryMuted: '#16303A',
+  accent: '#9FF3E4',
+  text: '#EEF4F6',
+  textMuted: '#9EA7AC',
+  textFaint: '#5C6A72',
   danger: '#FF5C5C',
   warning: '#FFC24B',
 } as const;
@@ -23,21 +25,45 @@ export const spacing = {
 } as const;
 
 export const radii = {
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 24,
-  pill: 999,
+  xs: 4,
+  chip: 4,
+  sm: 4,
+  md: 4,
+  lg: 4,
+  xl: 8,
+  pill: 4,
+} as const;
+
+export const fonts = {
+  regular: 'SpaceGrotesk_400Regular',
+  medium: 'SpaceGrotesk_500Medium',
+  semiBold: 'SpaceGrotesk_600SemiBold',
+  bold: 'SpaceGrotesk_700Bold',
 } as const;
 
 export const typography = {
-  h1: { fontSize: 28, fontWeight: '700' as const, color: colors.text },
-  h2: { fontSize: 22, fontWeight: '700' as const, color: colors.text },
-  h3: { fontSize: 18, fontWeight: '600' as const, color: colors.text },
-  body: { fontSize: 15, fontWeight: '400' as const, color: colors.text },
-  bodyMuted: { fontSize: 14, fontWeight: '400' as const, color: colors.textMuted },
-  caption: { fontSize: 12, fontWeight: '500' as const, color: colors.textFaint },
-  stat: { fontSize: 32, fontWeight: '800' as const, color: colors.text },
+  h1: { fontSize: 32, fontWeight: '600' as const, fontFamily: fonts.semiBold, letterSpacing: -0.6, color: colors.text },
+  h2: { fontSize: 22, fontWeight: '600' as const, fontFamily: fonts.semiBold, letterSpacing: -0.4, color: colors.text },
+  h3: { fontSize: 18, fontWeight: '600' as const, fontFamily: fonts.semiBold, letterSpacing: -0.3, color: colors.text },
+  body: { fontSize: 15, fontWeight: '400' as const, fontFamily: fonts.regular, color: colors.text },
+  bodyMuted: { fontSize: 14, fontWeight: '400' as const, fontFamily: fonts.regular, color: colors.textMuted },
+  caption: { fontSize: 12, fontWeight: '500' as const, fontFamily: fonts.medium, color: colors.textFaint },
+  button: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    fontFamily: fonts.semiBold,
+    letterSpacing: 0.6,
+    color: colors.text,
+  },
+  stat: {
+    fontSize: 32,
+    fontWeight: '700' as const,
+    fontFamily: fonts.bold,
+    fontVariant: ['tabular-nums' as const],
+    letterSpacing: -0.5,
+    color: colors.text,
+  },
+  label: { fontSize: 12, fontWeight: '500' as const, fontFamily: fonts.medium, letterSpacing: 0.8, color: colors.textFaint },
 };
 
 export const navigationTheme = {
@@ -48,12 +74,12 @@ export const navigationTheme = {
     card: colors.surface,
     text: colors.text,
     border: colors.border,
-    notification: colors.primary,
+    notification: colors.accent,
   },
   fonts: {
-    regular: { fontFamily: 'System', fontWeight: '400' as const },
-    medium: { fontFamily: 'System', fontWeight: '500' as const },
-    bold: { fontFamily: 'System', fontWeight: '700' as const },
-    heavy: { fontFamily: 'System', fontWeight: '800' as const },
+    regular: { fontFamily: fonts.regular, fontWeight: '400' as const },
+    medium: { fontFamily: fonts.medium, fontWeight: '500' as const },
+    bold: { fontFamily: fonts.bold, fontWeight: '700' as const },
+    heavy: { fontFamily: fonts.bold, fontWeight: '700' as const },
   },
 };

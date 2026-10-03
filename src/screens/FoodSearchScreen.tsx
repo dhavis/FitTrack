@@ -15,7 +15,7 @@ function todayString() {
 }
 
 export default function FoodSearchScreen({ route, navigation }: Props) {
-  const { mealType } = route.params;
+  const { mealType, loggedAt, customMealId } = route.params;
   const { session } = useAuth();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<FoodSearchResult[]>([]);
@@ -44,8 +44,9 @@ export default function FoodSearchScreen({ route, navigation }: Props) {
     setSaving(true);
     await supabase.from('food_logs').insert({
       user_id: session.user.id,
-      logged_at: todayString(),
-      meal_type: mealType,
+      logged_at: loggedAt ?? todayString(),
+      meal_type: customMealId ? 'snack' : mealType,
+      custom_meal_id: customMealId ?? null,
       food_name: selected.description,
       brand: selected.brandOwner ?? null,
       serving_qty: qty,

@@ -2,6 +2,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useTutorial } from '../components/TutorialProvider';
 import { Button, Card, Label, ScreenContainer, SectionTitle, TextInput } from '../components/ui';
 import GlossaryTip from '../components/GlossaryTip';
 import { useAuth } from '../hooks/useAuth';
@@ -23,6 +24,7 @@ const GENDERS: { id: Gender; label: string }[] = [
 
 export default function SettingsScreen() {
   const navigation = useNavigation<NavProp>();
+  const { openTutorial } = useTutorial();
   const { session, profile, refreshProfile, signOut } = useAuth();
   const unit = profile?.weight_unit ?? 'kg';
   const lengthUnit = profile?.length_unit ?? 'cm';
@@ -218,6 +220,23 @@ export default function SettingsScreen() {
                 />
               </View>
             </View>
+          </View>
+        </Card>
+
+        <Card style={styles.card}>
+          <SectionTitle>Tutorials</SectionTitle>
+          <Text style={styles.explainText}>
+            Building a workout covers exercises, supersets, powersets, drop sets, rest, and the session countdown.
+          </Text>
+          <View style={styles.field}>
+            <Button
+              title="Open tutorial"
+              variant="secondary"
+              onPress={() => {
+                navigation.getParent()?.navigate('Workouts');
+                openTutorial();
+              }}
+            />
           </View>
         </Card>
 

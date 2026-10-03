@@ -1,36 +1,37 @@
-import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React from 'react';
 import DashboardScreen from '../screens/DashboardScreen';
 import GoalsScreen from '../screens/GoalsScreen';
 import SettingsNavigator from './SettingsNavigator';
-import { colors } from '../theme/theme';
+import { colors, fonts } from '../theme/theme';
 import NutritionNavigator from './NutritionNavigator';
 import { MainTabParamList } from './types';
 import WeightNavigator from './WeightNavigator';
 import WorkoutsNavigator from './WorkoutsNavigator';
+import { TabIcon } from '../components/TabIcons';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
-
-const ICONS: Record<keyof MainTabParamList, keyof typeof Ionicons.glyphMap> = {
-  Dashboard: 'home',
-  Weight: 'trending-down',
-  Workouts: 'barbell',
-  Nutrition: 'restaurant',
-  Goals: 'flag',
-  Settings: 'settings',
-};
 
 export default function MainTabs() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border },
+        tabBarStyle: {
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
+          borderTopWidth: 1,
+        },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textFaint,
+        tabBarLabelStyle: {
+          fontFamily: fonts.medium,
+          fontSize: 10,
+          letterSpacing: 0.4,
+          textTransform: 'uppercase',
+        },
         tabBarIcon: ({ color, size }) => (
-          <Ionicons name={ICONS[route.name as keyof MainTabParamList]} color={color} size={size} />
+          <TabIcon name={route.name} color={color} size={size} />
         ),
       })}
     >

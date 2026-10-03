@@ -11,7 +11,11 @@ export type NutritionStackParamList = {
   NutritionPlan: undefined;
   NutritionPreferences: undefined;
   NutritionMenu: undefined;
-  FoodSearch: { mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack' };
+  FoodSearch: {
+    mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+    loggedAt?: string;
+    customMealId?: string | null;
+  };
 };
 
 export type SettingsStackParamList = {
@@ -43,7 +47,17 @@ export type MainTabParamList = {
 export type WorkoutsStackParamList = {
   WorkoutsHome: undefined;
   RoutineBuilder: { routineId?: string } | undefined;
-  ActiveWorkout: { workoutId: string };
+  ActiveWorkout: {
+    workoutId: string;
+    suggestion?: {
+      exerciseId: string;
+      reps: number;
+      weightKg: number | null;
+    };
+  };
+  WorkoutHistory: undefined;
+  WorkoutDetail: { workoutId: string };
+  ExerciseHistory: { exerciseId: string; workoutId?: string };
   ExerciseLibrary: undefined;
   GeneratePlan: undefined;
   DailyReadiness: { routineId: string };

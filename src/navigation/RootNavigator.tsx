@@ -5,6 +5,7 @@ import { isSupabaseConfigured } from '../lib/supabase';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import SetupRequiredScreen from '../screens/SetupRequiredScreen';
 import UpdatePasswordScreen from '../screens/UpdatePasswordScreen';
+import { TutorialProvider } from '../components/TutorialProvider';
 import { colors } from '../theme/theme';
 import AuthNavigator from './AuthNavigator';
 import MainTabs from './MainTabs';
@@ -36,5 +37,9 @@ export default function RootNavigator() {
     return <OnboardingScreen />;
   }
 
-  return <MainTabs />;
+  return (
+    <TutorialProvider>
+      <MainTabs />
+    </TutorialProvider>
+  );
 }

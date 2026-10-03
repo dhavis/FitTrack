@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FitTrack — Set gestures</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #04111c;
+      --text: #eef4f6;
+      --muted: rgb(238 244 246 / 0.66);
+      --line: rgb(238 244 246 / 0.22);
+      --on: #e8f1ff;
+      --on-text: #06121a;
+      --mint: #9ff3e4;
+      --danger: #ff5c5c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 28px 16px 48px;
+      background: #04111c;
+      color: var(--text);
+      font: 400 15px/1.4 "Space Grotesk", system-ui, sans-serif;
+    }
+    .note { width: 390px; color: var(--muted); font-size: 13px; }
+    .phone {
+      width: 390px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      padding: 20px 14px 24px;
+      background: linear-gradient(180deg, rgb(18 48 58 / 0.55), transparent 28%), var(--bg);
+    }
+    .kicker { color: var(--muted); font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; }
+    h1 { font-size: 32px; font-weight: 600; letter-spacing: -0.04em; margin-bottom: 14px; }
+    .plate {
+      background: linear-gradient(180deg, rgb(36 64 74 / 0.42), rgb(6 16 22 / 0.72));
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16);
+      padding: 14px;
+    }
+    h2 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+    .hint { color: var(--muted); font-size: 13px; margin-bottom: 10px; }
+    .swipe {
+      position: relative;
+      overflow: hidden;
+      border-top: 1px solid var(--line);
+      touch-action: pan-y;
+    }
+    .remove {
+      position: absolute;
+      inset: 0 0 0 auto;
+      width: 88px;
+      border: 0;
+      background: var(--danger);
+      color: #fff;
+      font: 600 13px "Space Grotesk", sans-serif;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .track {
+      position: relative;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 2px;
+      background: #0c1a22;
+      transform: translateX(0);
+      transition: transform 0.16s ease;
+      cursor: grab;
+      user-select: none;
+    }
+    .track strong { font-weight: 500; }
+    .kind { color: var(--muted); font-size: 13px; }
+    .add {
+      width: 100%;
+      margin-top: 12px;
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 12px;
+      font: 600 13px "Space Grotesk", sans-serif;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .sheet {
+      display: none;
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 12px;
+    }
+    .sheet.show { display: block; }
+    .sheet p { margin-bottom: 10px; }
+    label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+    input {
+      display: block;
+      width: 100%;
+      margin-top: 4px;
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 10px;
+      font: 500 16px "Space Grotesk", sans-serif;
+    }
+    .save {
+      margin-top: 8px;
+      width: 100%;
+      border: 0;
+      border-radius: 4px;
+      background: var(--on);
+      color: var(--on-text);
+      padding: 12px;
+      font: 600 13px "Space Grotesk", sans-serif;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <p class="note">Hold a set to change reps and weight. Drag a set left, then tap Remove. Add set copies the last one.</p>
+  <div class="phone">
+    <p class="kicker">Session</p>
+    <h1>Bench press</h1>
+    <section class="plate">
+      <h2>Sets</h2>
+      <p class="hint" id="hint">Hold a row. Drag left to remove.</p>
+      <div id="list"></div>
+      <button class="add" type="button" id="add">Add set</button>
+      <form class="sheet" id="sheet">
+        <p class="kicker" id="sheet-label">Set</p>
+        <label>Reps<input id="reps" inputmode="numeric" /></label>
+        <label>Weight (kg)<input id="weight" inputmode="decimal" /></label>
+        <button class="save" type="submit">Save</button>
+      </form>
+    </section>
+  </div>
+  <script>
+    const list = document.getElementById("list");
+    const sheet = document.getElementById("sheet");
+    const hint = document.getElementById("hint");
+    let sets = [
+      { id: 1, kind: "Warm-up", reps: 5, weight: 40 },
+      { id: 2, kind: "Warm-up", reps: 3, weight: 55 },
+      { id: 3, kind: "Set 1", reps: 5, weight: 80 },
+      { id: 4, kind: "Set 2", reps: 5, weight: 80 },
+      { id: 5, kind: "Set 3", reps: 5, weight: 80 }
+    ];
+    let nextId = 6;
+    let editing = null;
+
+    function workingCount() {
+      return sets.filter((s) => s.kind.startsWith("Set")).length;
+    }
+
+    function paint() {
+      list.innerHTML = "";
+      sets.forEach((set) => {
+        const row = document.createElement("div");
+        row.className = "swipe";
+        row.innerHTML = `<button class="remove" type="button">Remove</button><div class="track"><span class="kind">${set.kind}</span><strong>${set.weight} kg × ${set.reps}</strong></div>`;
+        const track = row.querySelector(".track");
+        const remove = row.querySelector(".remove");
+        let startX = 0;
+        let moved = false;
+        let hold = 0;
+        row.addEventListener("pointerdown", (e) => {
+          if (e.target === remove) return;
+          startX = e.clientX;
+          moved = false;
+          row.setPointerCapture(e.pointerId);
+          hold = setTimeout(() => {
+            if (!moved) open(set);
+          }, 450);
+        });
+        row.addEventListener("pointermove", (e) => {
+          const dx = e.clientX - startX;
+          if (Math.abs(dx) > 8) {
+            moved = true;
+            clearTimeout(hold);
+          }
+          if (dx < 0) track.style.transform = `translateX(${Math.max(dx, -88)}px)`;
+        });
+        row.addEventListener("pointerup", (e) => {
+          clearTimeout(hold);
+          const dx = e.clientX - startX;
+          track.style.transform = dx < -48 ? "translateX(-88px)" : "translateX(0)";
+        });
+        remove.addEventListener("click", () => {
+          if (set.kind.startsWith("Set") && workingCount() === 1) {
+            hint.textContent = "Keep one working set, or remove the exercise.";
+            track.style.transform = "translateX(0)";
+            return;
+          }
+          sets = sets.filter((s) => s.id !== set.id);
+          if (editing === set.id) sheet.classList.remove("show");
+          paint();
+        });
+        list.appendChild(row);
+      });
+    }
+
+    function open(set) {
+      editing = set.id;
+      document.getElementById("sheet-label").textContent = set.kind;
+      document.getElementById("reps").value = String(set.reps);
+      document.getElementById("weight").value = String(set.weight);
+      sheet.classList.add("show");
+      hint.textContent = "Saving changes this set only.";
+    }
+
+    sheet.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const set = sets.find((s) => s.id === editing);
+      if (!set) return;
+      set.reps = Number(document.getElementById("reps").value) || set.reps;
+      set.weight = Number(document.getElementById("weight").value) || set.weight;
+      sheet.classList.remove("show");
+      paint();
+    });
+
+    document.getElementById("add").addEventListener("click", () => {
+      const last = [...sets].reverse().find((s) => s.kind.startsWith("Set")) || sets[sets.length - 1];
+      const n = workingCount() + 1;
+      sets.push({ id: nextId++, kind: `Set ${n}`, reps: last.reps, weight: last.weight });
+      paint();
+    });
+
+    paint();
+  </script>
+</body>
+</html>

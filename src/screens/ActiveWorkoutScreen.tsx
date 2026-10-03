@@ -4,9 +4,12 @@ import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, View } from '
 import ActiveGymSwitcher from '../components/ActiveGymSwitcher';
 import ExercisePickerModal from '../components/ExercisePickerModal';
 import HowToPanel from '../components/HowToPanel';
+import SetRowList from '../components/SetRowList';
+import UnitGear from '../components/UnitGear';
 import { Button, Card, EmptyState, Label, ScreenContainer, TextInput } from '../components/ui';
 import { useActiveGymProfile } from '../hooks/useActiveGymProfile';
 import { useAuth } from '../hooks/useAuth';
+import { isBodyweightEquipment } from '../lib/exercises';
 import { isExerciseAllowed } from '../lib/equipmentPolicy';
 import {
   buildMachineCursor,
@@ -18,12 +21,15 @@ import {
   MachineBlock,
   MachineExercise,
 } from '../lib/liveWorkoutMachine';
+import { legacyPlannedSets, PlannedSet, plannedStepForCursor } from '../lib/plannedSets';
 import { suggestProgression, summarizeLastSets } from '../lib/progression';
+import { buildSessionSetRows } from '../lib/sessionSets';
 import { supabase } from '../lib/supabase';
 import { displayWeight, toStorageWeightKg } from '../lib/units';
+import { buildWarmupSets } from '../lib/warmup';
 import { fetchWorkoutPlan, initWorkoutPlan, logWorkoutSet } from '../lib/workoutPlan';
 import { WorkoutsStackParamList } from '../navigation/types';
-import { colors, radii, spacing, typography } from '../theme/theme';
+import { colors, fonts, radii, spacing, typography } from '../theme/theme';
 import {
   AdaptationEvent,
   Exercise,
@@ -37,7 +43,7 @@ import {
 type Props = NativeStackScreenProps<WorkoutsStackParamList, 'ActiveWorkout'>;
 
 export default function ActiveWorkoutScreen({ route, navigation }: Props) {
-  const { workoutId } = route.params;
+  const { workoutId, suggestion: incomingSuggestion } = route.params;
   const { profile, session } = useAuth();
   const { activeGym } = useActiveGymProfile();
   const defaultUnit: WeightUnit = profile?.weight_unit ?? 'kg';
@@ -48,7 +54,8 @@ export default function ActiveWorkoutScreen({ route, navigation }: Props) {
   const [liveState, setLiveState] = useState<WorkoutLiveState | null>(null);
   const [reps, setReps] = useState<Record<string, string>>({});
   const [weights, setWeights] = useState<Record<string, string>>({});
-  const [unitOverrides, setUnitOverrides] = useState<Record<string, WeightUnit | null>>({});
+  const [sessionUnit, setSessionUnit] = useState<WeightUnit>(defaultUnit);
+  const [hiddenWarmups, setHiddenWarmups] = useState<string[]>([]);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [restSecondsLeft, setRestSecondsLeft] = useState<number | null>(null);
   const [lastSessionLabel, setLastSessionLabel] = useState<string | null>(null);
@@ -63,6 +70,41 @@ export default function ActiveWorkoutScreen({ route, navigation }: Props) {
   const [substituteLoading, setSubstituteLoading] = useState(false);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const appliedSuggestion = useRef(false);
+
+  useEffect(() => {
+    if (!incomingSuggestion || appliedSuggestion.current) return;
+    const loaded = blocks.some((block) =>
+      block.exercises.some((exercise) => exercise.exercise_id === incomingSuggestion.exerciseId)
+    );
+    if (!loaded) return;
+    appliedSuggestion.current = true;
+    const { exerciseId, reps: sugReps, weightKg: sugWeightKg } = incomingSuggestion;
+    const weightText = sugWeightKg != null ? displayWeight(sugWeightKg, sessionUnit).toFixed(1) : '';
+    setReps((prev) => ({ ...prev, [exerciseId]: String(sugReps) }));
+    setWeights((prev) => ({ ...prev, [exerciseId]: weightText }));
+    setBlocks((prev) =>
+      prev.map((block) => ({
+        ...block,
+        exercises: block.exercises.map((item) => {
+          if (item.exercise_id !== exerciseId) return item;
+          const planned =
+            item.planned_sets ??
+            legacyPlannedSets(item.target_sets, item.target_reps, item.target_weight_kg, item.drop_steps);
+          let seen = -1;
+          return {
+            ...item,
+            planned_sets: planned.map((set) => {
+              if (set.kind !== 'regular') return set;
+              seen += 1;
+              if (seen !== 0) return set;
+              return { ...set, reps: sugReps, weight_kg: sugWeightKg ?? null };
+            }),
+          };
+        }),
+      }))
+    );
+  }, [incomingSuggestion, sessionUnit, blocks]);
 
   const load = useCallback(async () => {
     // 1. Ensure workout plan snapshot is initialized
@@ -140,14 +182,12 @@ export default function ActiveWorkoutScreen({ route, navigation }: Props) {
 
     const initialReps: Record<string, string> = {};
     const initialWeights: Record<string, string> = {};
-    const initialUnits: Record<string, WeightUnit | null> = {};
 
     if (planBlocks.length > 0) {
       setBlocks(planBlocks);
       planBlocks.forEach((b) => {
         b.exercises.forEach((ex) => {
-          const effectiveUnit = ex.weight_unit ?? defaultUnit;
-          initialUnits[ex.exercise_id] = ex.weight_unit ?? null;
+          const effectiveUnit = defaultUnit;
           initialReps[ex.exercise_id] = String(ex.target_reps);
           if (ex.target_weight_kg != null) {
             initialWeights[ex.exercise_id] = displayWeight(
@@ -235,15 +275,15 @@ export default function ActiveWorkoutScreen({ route, navigation }: Props) {
       const routineExercises: RoutineExercise[] = reData ?? [];
 
       const fallbackBlocks: MachineBlock[] = routineExercises.map((re, idx) => {
-        const effectiveUnit = re.weight_unit ?? defaultUnit;
-        initialUnits[re.exercise_id] = re.weight_unit ?? null;
+        const effectiveUnit = defaultUnit;
         const last = lastSetsMap.get(re.exercise_id) ?? [];
         const suggestion = suggestProgression({
           targetSets: re.target_sets,
           targetReps: re.target_reps,
           targetWeightKg: re.target_weight_kg,
+          displayUnit: effectiveUnit,
           lastSets: last,
-          experience: experienceLevel,
+          isBodyweight: isBodyweightEquipment(re.exercise?.equipment),
         });
         initialReps[re.exercise_id] = String(suggestion.reps);
         if (suggestion.weightKg != null) {
@@ -278,7 +318,6 @@ export default function ActiveWorkoutScreen({ route, navigation }: Props) {
 
     setReps((prev) => ({ ...initialReps, ...prev }));
     setWeights((prev) => ({ ...initialWeights, ...prev }));
-    setUnitOverrides((prev) => ({ ...initialUnits, ...prev }));
   }, [workoutId, session, defaultUnit]);
 
   useEffect(() => {
@@ -309,6 +348,41 @@ export default function ActiveWorkoutScreen({ route, navigation }: Props) {
 
     return deriveCursorFromLoggedSets(blocks, loggedSets);
   }, [blocks, liveState, loggedSets]);
+
+  useEffect(() => {
+    const exercise = cursor.currentExercise;
+    if (!exercise || cursor.isComplete || cursor.phase === 'rest') return;
+    const planned =
+      exercise.planned_sets ??
+      legacyPlannedSets(exercise.target_sets, exercise.target_reps, exercise.target_weight_kg, exercise.drop_steps);
+    const step = plannedStepForCursor(planned, cursor.phase, cursor.currentRound, cursor.currentDropIndex);
+    if (!step) return;
+    const key =
+      cursor.phase === 'drop' && cursor.currentDropIndex != null
+        ? `drop-${exercise.exercise_id}-${cursor.currentDropIndex}`
+        : exercise.exercise_id;
+    setReps((prev) => {
+      const current = parseInt(prev[key] ?? '', 10);
+      if (current === step.reps) return prev;
+      return { ...prev, [key]: String(step.reps) };
+    });
+    setWeights((prev) => {
+      const next = step.weight_kg != null ? displayWeight(step.weight_kg, sessionUnit).toFixed(1) : '';
+      const parsed = parseFloat(prev[key] ?? '');
+      const currentKg =
+        (prev[key] ?? '').trim() === '' || Number.isNaN(parsed) ? null : toStorageWeightKg(parsed, sessionUnit);
+      if (currentKg == null && step.weight_kg == null) return prev;
+      if (currentKg != null && step.weight_kg != null && Math.abs(currentKg - step.weight_kg) < 0.05) return prev;
+      return { ...prev, [key]: next };
+    });
+  }, [
+    cursor.currentExercise,
+    cursor.currentRound,
+    cursor.phase,
+    cursor.currentDropIndex,
+    cursor.isComplete,
+    sessionUnit,
+  ]);
 
   const finishRest = useCallback(async () => {
     if (timerRef.current) {
@@ -366,22 +440,195 @@ export default function ActiveWorkoutScreen({ route, navigation }: Props) {
     };
   }, [restSecondsLeft, finishRest]);
 
-  const handleExerciseUnitChange = (exerciseId: string, newUnit: WeightUnit | null) => {
-    const prevUnit = unitOverrides[exerciseId] ?? defaultUnit;
-    const nextUnit = newUnit ?? defaultUnit;
+  const changeSessionUnit = (next: WeightUnit) => {
+    if (next === sessionUnit) return;
+    const convert = (value: string) => {
+      const parsed = parseFloat(value);
+      if (!value || Number.isNaN(parsed)) return value;
+      return displayWeight(toStorageWeightKg(parsed, sessionUnit), next).toFixed(1);
+    };
+    setWeights((prev) => {
+      const converted: Record<string, string> = {};
+      Object.entries(prev).forEach(([key, value]) => {
+        converted[key] = convert(value);
+      });
+      return converted;
+    });
+    setSessionUnit(next);
+  };
 
-    const currentWeightStr = weights[exerciseId] ?? '';
-    if (prevUnit !== nextUnit && currentWeightStr.trim() !== '') {
-      const val = parseFloat(currentWeightStr);
-      if (!Number.isNaN(val)) {
-        const kg = toStorageWeightKg(val, prevUnit);
-        const converted = displayWeight(kg, nextUnit);
-        const newStr = String(Math.round(converted * 10) / 10);
-        setWeights((prev) => ({ ...prev, [exerciseId]: newStr }));
+  const plannedFor = (exercise: MachineExercise): PlannedSet[] =>
+    exercise.planned_sets ??
+    legacyPlannedSets(
+      exercise.target_sets,
+      exercise.target_reps,
+      exercise.target_weight_kg,
+      exercise.drop_steps
+    );
+
+  const persistPlanned = async (block: MachineBlock, exercise: MachineExercise, planned: PlannedSet[]) => {
+    const regular = planned.filter((set) => set.kind === 'regular');
+    const first = regular[0];
+    const nextSets = Math.max(regular.length, 1);
+    const payload = {
+      target_sets: nextSets,
+      target_reps: first?.reps ?? exercise.target_reps,
+      target_weight_kg: first?.weight_kg ?? null,
+      planned_sets: planned,
+    };
+    const { error } = await supabase.from('workout_plan_exercises').update(payload).eq('id', exercise.id);
+    if (error) {
+      await supabase
+        .from('workout_plan_exercises')
+        .update({
+          target_sets: payload.target_sets,
+          target_reps: payload.target_reps,
+          target_weight_kg: payload.target_weight_kg,
+        })
+        .eq('id', exercise.id);
+    }
+    const drops = planned.filter((set) => set.kind === 'drop');
+    const dropSteps = drops.map((set, index) => ({
+      drop_index: index + 1,
+      target_reps: set.reps,
+      target_weight_kg: set.weight_kg,
+      weight_unit: null,
+    }));
+    const canPersist = !exercise.id.startsWith('adhoc') && !exercise.id.startsWith('adapt-');
+    if (canPersist) {
+      await supabase.from('workout_plan_drop_steps').delete().eq('workout_plan_exercise_id', exercise.id);
+      if (dropSteps.length > 0) {
+        await supabase.from('workout_plan_drop_steps').insert(
+          dropSteps.map((step) => ({
+            workout_plan_exercise_id: exercise.id,
+            drop_index: step.drop_index,
+            target_reps: step.target_reps,
+            target_weight_kg: step.target_weight_kg,
+            weight_unit: null,
+          }))
+        );
       }
     }
+    if (canPersist && block.block_type === 'straight' && !block.id.startsWith('adhoc')) {
+      await supabase.from('workout_plan_blocks').update({ target_rounds: nextSets }).eq('id', block.id);
+    }
+    const nextBlocks = blocks.map((item) => {
+      if (item.id !== block.id) return item;
+      return {
+        ...item,
+        target_rounds: item.block_type === 'straight' ? nextSets : item.target_rounds,
+        exercises: item.exercises.map((row) =>
+          row.id === exercise.id
+            ? {
+                ...row,
+                planned_sets: planned,
+                target_sets: nextSets,
+                target_reps: payload.target_reps,
+                target_weight_kg: payload.target_weight_kg,
+                drop_steps: dropSteps,
+              }
+            : row
+        ),
+      };
+    });
+    setBlocks(nextBlocks);
+    const shapeChanged =
+      dropSteps.length !== exercise.drop_steps.length ||
+      (block.block_type === 'straight' && nextSets !== block.target_rounds);
+    if (shapeChanged) await realignLiveState(loggedSets, nextBlocks);
+  };
 
-    setUnitOverrides((prev) => ({ ...prev, [exerciseId]: newUnit }));
+  const insertLoggedSet = async (params: {
+    exerciseId: string;
+    planExerciseId: string;
+    reps: number;
+    weightKg: number | null;
+    setType: 'regular' | 'warmup' | 'drop';
+    dropIndex: number | null;
+    roundIndex: number;
+  }) => {
+    const setIndex = Math.max(0, ...loggedSets.map((set) => set.set_index)) + 1;
+    const { data, error } = await supabase
+      .from('workout_sets')
+      .insert({
+        workout_id: workoutId,
+        exercise_id: params.exerciseId,
+        workout_plan_exercise_id: params.planExerciseId.startsWith('adhoc') || params.planExerciseId.startsWith('adapt-')
+          ? null
+          : params.planExerciseId,
+        set_index: setIndex,
+        reps: params.reps,
+        weight_kg: params.weightKg,
+        set_type: params.setType,
+        drop_index: params.dropIndex,
+        round_index: params.roundIndex,
+        completed_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+    if (error || !data) return;
+    setLoggedSets((prev) => [...prev, data as WorkoutSet]);
+  };
+
+  const realignLiveState = async (nextLogged: WorkoutSet[], sourceBlocks: MachineBlock[] = blocks) => {
+    const derived = deriveCursorFromLoggedSets(sourceBlocks, nextLogged);
+    const updatedState: WorkoutLiveState = {
+      workout_id: workoutId,
+      phase: derived.isComplete ? 'complete' : derived.phase,
+      current_block_order: derived.currentBlockOrder,
+      current_round: derived.currentRound,
+      current_exercise_position: derived.currentExercisePosition,
+      current_drop_index: derived.currentDropIndex,
+      rest_started_at: null,
+      rest_ends_at: null,
+      version: (liveState?.version ?? 1) + 1,
+      updated_at: new Date().toISOString(),
+    };
+    setLiveState(updatedState);
+    setRestSecondsLeft(null);
+    await supabase.from('workout_live_state').upsert(updatedState);
+  };
+
+  const patchCurrentStep = (repsText: string, weightText: string) => {
+    const exercise = cursor.currentExercise;
+    if (!exercise || cursor.isComplete || cursor.phase === 'rest') return;
+    const repsVal = parseInt(repsText, 10);
+    const parsed = parseFloat(weightText);
+    const weightKg =
+      weightText.trim() === '' || Number.isNaN(parsed) || parsed <= 0
+        ? null
+        : toStorageWeightKg(parsed, sessionUnit);
+    setBlocks((prev) =>
+      prev.map((block) => ({
+        ...block,
+        exercises: block.exercises.map((item) => {
+          if (item.id !== exercise.id) return item;
+          const planned =
+            item.planned_sets ??
+            legacyPlannedSets(item.target_sets, item.target_reps, item.target_weight_kg, item.drop_steps);
+          let regularSeen = -1;
+          let dropSeen = -1;
+          const next = planned.map((set) => {
+            if (cursor.phase === 'drop') {
+              if (set.kind !== 'drop') return set;
+              dropSeen += 1;
+              if (dropSeen !== (cursor.currentDropIndex ?? 1) - 1) return set;
+            } else if (set.kind === 'regular') {
+              regularSeen += 1;
+              if (regularSeen !== cursor.currentRound - 1) return set;
+            } else {
+              return set;
+            }
+            return {
+              ...set,
+              reps: !Number.isNaN(repsVal) && repsVal > 0 ? repsVal : set.reps,
+              weight_kg: weightKg,
+            };
+          });
+          return { ...item, planned_sets: next };
+        }),
+      }))
+    );
   };
 
   const logCurrentStep = async () => {
@@ -395,21 +642,41 @@ export default function ActiveWorkoutScreen({ route, navigation }: Props) {
     const isDrop = cursor.phase === 'drop' && cursor.currentDropIndex != null;
     const dropKey = isDrop ? `drop-${activeExercise.exercise_id}-${cursor.currentDropIndex}` : '';
 
-    const effectiveUnit = unitOverrides[activeExercise.exercise_id] ?? activeExercise.weight_unit ?? defaultUnit;
+    const effectiveUnit = sessionUnit;
+    const planned =
+      activeExercise.planned_sets ??
+      legacyPlannedSets(
+        activeExercise.target_sets,
+        activeExercise.target_reps,
+        activeExercise.target_weight_kg,
+        activeExercise.drop_steps
+      );
+    const step = plannedStepForCursor(
+      planned,
+      isDrop ? 'drop' : 'regular',
+      cursor.currentRound,
+      cursor.currentDropIndex
+    );
 
     const repsInput = isDrop ? reps[dropKey] || reps[activeExercise.exercise_id] || '' : reps[activeExercise.exercise_id] || '';
     const weightInput = isDrop ? weights[dropKey] || weights[activeExercise.exercise_id] || '' : weights[activeExercise.exercise_id] || '';
 
-    const repsVal = parseInt(repsInput, 10);
-    if (Number.isNaN(repsVal) || repsVal <= 0) return;
+    const typedReps = parseInt(repsInput, 10);
+    const repsVal = !Number.isNaN(typedReps) && typedReps > 0 ? typedReps : (step?.reps ?? 0);
+    if (!repsVal || repsVal <= 0) return;
 
     const parsedWeight = parseFloat(weightInput);
-    const weight_kg = Number.isNaN(parsedWeight) || parsedWeight <= 0 ? null : toStorageWeightKg(parsedWeight, effectiveUnit);
+    const weight_kg =
+      weightInput.trim() === '' || Number.isNaN(parsedWeight) || parsedWeight <= 0
+        ? weightInput.trim() === ''
+          ? (step?.weight_kg ?? null)
+          : null
+        : toStorageWeightKg(parsedWeight, effectiveUnit);
 
     setLogging(true);
 
     const nextStep = cursor.nextStep;
-    const currentSetIndex = loggedSets.length + 1;
+    const currentSetIndex = Math.max(0, ...loggedSets.map((set) => set.set_index), 0) + 1;
 
     const newSet = await logWorkoutSet({
       workoutId,
@@ -547,7 +814,10 @@ export default function ActiveWorkoutScreen({ route, navigation }: Props) {
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={typography.h1}>Active Workout</Text>
+        <View style={styles.titleRow}>
+          <Text style={typography.h1}>Active Workout</Text>
+          <UnitGear unit={sessionUnit} onChange={changeSessionUnit} />
+        </View>
 
         <ActiveGymSwitcher
           compact
@@ -614,12 +884,41 @@ export default function ActiveWorkoutScreen({ route, navigation }: Props) {
               {block.exercises.map((ex, eIdx) => {
                 const isCurrentExercise =
                   isCurrentBlock && cursor.currentExercisePosition === eIdx;
-                const effectiveUnit = unitOverrides[ex.exercise_id] ?? ex.weight_unit ?? defaultUnit;
+                const effectiveUnit = sessionUnit;
 
                 const exLoggedSets = loggedSets.filter((s) => s.exercise_id === ex.exercise_id);
-                const last = lastSetsByExercise.get(ex.exercise_id) ?? [];
+                const regularLoggedSets = exLoggedSets.filter(
+                  (s) => s.set_type !== 'drop' && s.set_type !== 'warmup' && (s.drop_index == null || s.drop_index === 0)
+                );
+                const isBeforeFirstRegularSet = regularLoggedSets.length === 0;
 
+                const last = lastSetsByExercise.get(ex.exercise_id) ?? [];
                 const isAllowed = isExerciseAllowed(ex.exercise, gymPolicy);
+
+                // Compute progression suggestion
+                const exSuggestion = suggestProgression({
+                  targetSets: ex.target_sets,
+                  targetReps: ex.target_reps,
+                  targetWeightKg: ex.target_weight_kg,
+                  displayUnit: effectiveUnit,
+                  lastSets: last,
+                  isBodyweight: isBodyweightEquipment(ex.exercise?.equipment),
+                });
+
+                const planned = plannedFor(ex);
+                const warmups = buildWarmupSets({
+                  isBodyweight: isBodyweightEquipment(ex.exercise?.equipment),
+                  lastSets: last,
+                  unit: sessionUnit,
+                });
+                const sessionRows = buildSessionSetRows({
+                  exerciseId: ex.exercise_id,
+                  planned,
+                  logged: loggedSets,
+                  warmups,
+                  hiddenWarmupKeys: hiddenWarmups,
+                  pairedRounds: block.target_rounds,
+                });
 
                 return (
                   <Card
@@ -641,11 +940,24 @@ export default function ActiveWorkoutScreen({ route, navigation }: Props) {
                           </View>
                         )}
                       </View>
-                      {isCurrentExercise && (
-                        <View style={styles.activeNowBadge}>
-                          <Text style={styles.activeNowText}>ACTIVE NOW</Text>
-                        </View>
-                      )}
+                      <View style={styles.headerActions}>
+                        <Pressable
+                          style={styles.historyBtn}
+                          onPress={() =>
+                            navigation.navigate('ExerciseHistory', {
+                              exerciseId: ex.exercise_id,
+                              workoutId,
+                            })
+                          }
+                        >
+                          <Text style={styles.historyBtnText}>History</Text>
+                        </Pressable>
+                        {isCurrentExercise && (
+                          <View style={styles.activeNowBadge}>
+                            <Text style={styles.activeNowText}>ACTIVE NOW</Text>
+                          </View>
+                        )}
+                      </View>
                     </View>
 
                     {!isAllowed && (
@@ -665,9 +977,151 @@ export default function ActiveWorkoutScreen({ route, navigation }: Props) {
                     <Text style={typography.bodyMuted}>
                       Target: {block.target_rounds} x {ex.target_reps}
                       {ex.target_weight_kg != null
-                        ? ` @ ${displayWeight(ex.target_weight_kg, effectiveUnit).toFixed(1)} ${effectiveUnit}`
+                        ? ` @ ${displayWeight(ex.target_weight_kg, effectiveUnit).toFixed(1)}`
                         : ''}
                     </Text>
+                    <SetRowList
+                      unit={sessionUnit}
+                      rows={sessionRows.map((row) => ({
+                        key: row.key,
+                        label: row.label,
+                        detail:
+                          row.weightKg != null
+                            ? `${displayWeight(row.weightKg, sessionUnit).toFixed(1)} × ${row.reps}`
+                            : `${row.reps} reps`,
+                        reps: String(row.reps),
+                        weight: row.weightKg != null ? displayWeight(row.weightKg, sessionUnit).toFixed(1) : '',
+                        canRemove: row.canRemove,
+                      }))}
+                      onAdd={() => {
+                        const regular = planned.filter((set) => set.kind === 'regular');
+                        const lastSet = regular[regular.length - 1];
+                        const added: PlannedSet = {
+                          kind: 'regular',
+                          reps: lastSet?.reps ?? ex.target_reps,
+                          weight_kg: lastSet?.weight_kg ?? ex.target_weight_kg,
+                        };
+                        const dropAt = planned.findIndex((set) => set.kind === 'drop');
+                        const next = [...planned];
+                        if (dropAt === -1) next.push(added);
+                        else next.splice(dropAt, 0, added);
+                        persistPlanned(block, ex, next);
+                      }}
+                      onCommit={(key, repsText, weightText) => {
+                        const row = sessionRows.find((item) => item.key === key);
+                        if (!row) return;
+                        const repsVal = parseInt(repsText, 10);
+                        if (!repsVal || repsVal <= 0) return;
+                        const parsed = parseFloat(weightText);
+                        const weightKg =
+                          Number.isNaN(parsed) || parsed <= 0 ? null : toStorageWeightKg(parsed, sessionUnit);
+                        if (row.loggedId) {
+                          supabase
+                            .from('workout_sets')
+                            .update({ reps: repsVal, weight_kg: weightKg })
+                            .eq('id', row.loggedId)
+                            .select()
+                            .single()
+                            .then(({ data }) => {
+                              if (!data) return;
+                              setLoggedSets((prev) => prev.map((set) => (set.id === row.loggedId ? (data as WorkoutSet) : set)));
+                            });
+                          return;
+                        }
+                        if (row.recordsOnSave) {
+                          insertLoggedSet({
+                            exerciseId: ex.exercise_id,
+                            planExerciseId: ex.id,
+                            reps: repsVal,
+                            weightKg,
+                            setType: row.kind === 'warmup' ? 'warmup' : 'regular',
+                            dropIndex: null,
+                            roundIndex: -1,
+                          });
+                          return;
+                        }
+                        const kind = row.kind === 'drop' ? 'drop' : 'regular';
+                        const index = Number(key.split(':').pop());
+                        const isCurrentStep =
+                          cursor.currentExercise?.id === ex.id &&
+                          ((kind === 'regular' && cursor.phase === 'regular' && index === cursor.currentRound - 1) ||
+                            (kind === 'drop' &&
+                              cursor.phase === 'drop' &&
+                              index === (cursor.currentDropIndex ?? 1) - 1));
+                        if (isCurrentStep) {
+                          const inputKey =
+                            kind === 'drop' ? `drop-${ex.exercise_id}-${cursor.currentDropIndex}` : ex.exercise_id;
+                          setReps((prev) => ({ ...prev, [inputKey]: String(repsVal) }));
+                          setWeights((prev) => ({
+                            ...prev,
+                            [inputKey]: weightKg != null ? displayWeight(weightKg, sessionUnit).toFixed(1) : '',
+                          }));
+                        }
+                        let seen = -1;
+                        const next = planned.map((set) => {
+                          if (set.kind !== kind) return set;
+                          seen += 1;
+                          if (seen !== index) return set;
+                          return { ...set, reps: repsVal, weight_kg: weightKg };
+                        });
+                        persistPlanned(block, ex, next);
+                      }}
+                      onRemove={(key) => {
+                        const row = sessionRows.find((item) => item.key === key);
+                        if (!row || !row.canRemove) return;
+                        if (row.loggedId) {
+                          const nextLogged = loggedSets.filter((set) => set.id !== row.loggedId);
+                          supabase.from('workout_sets').delete().eq('id', row.loggedId);
+                          setLoggedSets(nextLogged);
+                          realignLiveState(nextLogged);
+                          return;
+                        }
+                        if (row.kind === 'warmup') {
+                          setHiddenWarmups((prev) => [...prev, row.key]);
+                          return;
+                        }
+                        const kind = row.kind === 'drop' ? 'drop' : 'regular';
+                        const index = Number(key.split(':').pop());
+                        let seen = -1;
+                        const next = planned.filter((set) => {
+                          if (set.kind !== kind) return true;
+                          seen += 1;
+                          return seen !== index;
+                        });
+                        persistPlanned(block, ex, next);
+                      }}
+                    />
+
+                    {/* Suggestion banner beside exercise before first regular set */}
+                    {isBeforeFirstRegularSet && (
+                      <View style={styles.suggestionBanner}>
+                        <View style={styles.suggestionHeaderRow}>
+                          <Text style={styles.suggestionTitle}>💡 Target suggestion</Text>
+                          <Pressable
+                            style={styles.useSuggestionPill}
+                            onPress={() => {
+                              const repsText = String(exSuggestion.reps);
+                              const weightText =
+                                exSuggestion.weightKg != null
+                                  ? displayWeight(exSuggestion.weightKg, effectiveUnit).toFixed(1)
+                                  : '';
+                              setReps((prev) => ({ ...prev, [ex.exercise_id]: repsText }));
+                              setWeights((prev) => ({ ...prev, [ex.exercise_id]: weightText }));
+                              patchCurrentStep(repsText, weightText);
+                            }}
+                          >
+                            <Text style={styles.useSuggestionPillText}>Use suggestion</Text>
+                          </Pressable>
+                        </View>
+                        <Text style={styles.suggestionDetails}>
+                          {exSuggestion.reps} reps
+                          {exSuggestion.weightKg != null
+                            ? ` @ ${displayWeight(exSuggestion.weightKg, effectiveUnit).toFixed(1)} ${effectiveUnit}`
+                            : ' (bodyweight)'}{' '}
+                          · <Text style={styles.suggestionNote}>{exSuggestion.note}</Text>
+                        </Text>
+                      </View>
+                    )}
 
                     {last.length > 0 && (
                       <View style={styles.lastSessionBox}>
@@ -737,59 +1191,6 @@ export default function ActiveWorkoutScreen({ route, navigation }: Props) {
                           </View>
                         )}
 
-                        {/* Unit selector */}
-                        <View style={styles.unitSelectorRow}>
-                          <Text style={styles.unitSelectorLabel}>Unit:</Text>
-                          <Pressable
-                            onPress={() => handleExerciseUnitChange(ex.exercise_id, null)}
-                            style={[
-                              styles.unitChip,
-                              (unitOverrides[ex.exercise_id] ?? null) === null && styles.unitChipActive,
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.unitChipText,
-                                (unitOverrides[ex.exercise_id] ?? null) === null && styles.unitChipTextActive,
-                              ]}
-                            >
-                              Default ({defaultUnit})
-                            </Text>
-                          </Pressable>
-                          <Pressable
-                            onPress={() => handleExerciseUnitChange(ex.exercise_id, 'kg')}
-                            style={[
-                              styles.unitChip,
-                              (unitOverrides[ex.exercise_id] ?? null) === 'kg' && styles.unitChipActive,
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.unitChipText,
-                                (unitOverrides[ex.exercise_id] ?? null) === 'kg' && styles.unitChipTextActive,
-                              ]}
-                            >
-                              kg
-                            </Text>
-                          </Pressable>
-                          <Pressable
-                            onPress={() => handleExerciseUnitChange(ex.exercise_id, 'lb')}
-                            style={[
-                              styles.unitChip,
-                              (unitOverrides[ex.exercise_id] ?? null) === 'lb' && styles.unitChipActive,
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.unitChipText,
-                                (unitOverrides[ex.exercise_id] ?? null) === 'lb' && styles.unitChipTextActive,
-                              ]}
-                            >
-                              lb
-                            </Text>
-                          </Pressable>
-                        </View>
-
                         {/* Reps & Weight Input */}
                         <View style={styles.setInputRow}>
                           <View style={styles.smallInput}>
@@ -802,6 +1203,10 @@ export default function ActiveWorkoutScreen({ route, navigation }: Props) {
                                   : reps[ex.exercise_id] ?? ''
                               }
                               onChangeText={(v) => {
+                                const weightValue =
+                                  cursor.phase === 'drop' && cursor.currentDropIndex != null
+                                    ? weights[`drop-${ex.exercise_id}-${cursor.currentDropIndex}`] ?? weights[ex.exercise_id] ?? ''
+                                    : weights[ex.exercise_id] ?? '';
                                 if (cursor.phase === 'drop' && cursor.currentDropIndex != null) {
                                   setReps((prev) => ({
                                     ...prev,
@@ -810,11 +1215,12 @@ export default function ActiveWorkoutScreen({ route, navigation }: Props) {
                                 } else {
                                   setReps((prev) => ({ ...prev, [ex.exercise_id]: v }));
                                 }
+                                patchCurrentStep(v, weightValue);
                               }}
                             />
                           </View>
                           <View style={styles.smallInput}>
-                            <Label>Weight ({effectiveUnit})</Label>
+                            <Label>Weight</Label>
                             <TextInput
                               keyboardType="decimal-pad"
                               value={
@@ -823,6 +1229,10 @@ export default function ActiveWorkoutScreen({ route, navigation }: Props) {
                                   : weights[ex.exercise_id] ?? ''
                               }
                               onChangeText={(v) => {
+                                const repsValue =
+                                  cursor.phase === 'drop' && cursor.currentDropIndex != null
+                                    ? reps[`drop-${ex.exercise_id}-${cursor.currentDropIndex}`] ?? reps[ex.exercise_id] ?? ''
+                                    : reps[ex.exercise_id] ?? '';
                                 if (cursor.phase === 'drop' && cursor.currentDropIndex != null) {
                                   setWeights((prev) => ({
                                     ...prev,
@@ -831,6 +1241,7 @@ export default function ActiveWorkoutScreen({ route, navigation }: Props) {
                                 } else {
                                   setWeights((prev) => ({ ...prev, [ex.exercise_id]: v }));
                                 }
+                                patchCurrentStep(repsValue, v);
                               }}
                             />
                           </View>
@@ -929,12 +1340,13 @@ export default function ActiveWorkoutScreen({ route, navigation }: Props) {
 
 const styles = StyleSheet.create({
   content: { paddingBottom: spacing.xl },
+  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   caption: { ...typography.caption, marginTop: spacing.xs },
   adaptedBadge: {
-    backgroundColor: '#1E2D24',
+    backgroundColor: colors.surfaceAlt,
     borderColor: colors.accent,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: radii.sm,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     marginTop: spacing.xs,
@@ -969,8 +1381,22 @@ const styles = StyleSheet.create({
   blockRoundText: { ...typography.caption, color: colors.accent, fontWeight: '700' },
   blockHelperText: { ...typography.caption, color: colors.textMuted, marginTop: 4, marginBottom: spacing.xs },
   exerciseCard: { marginTop: spacing.sm, backgroundColor: colors.surfaceAlt },
-  activeExerciseCard: { borderColor: colors.accent, borderWidth: 1.5, backgroundColor: '#17241C' },
+  activeExerciseCard: { borderColor: colors.accent, borderWidth: 1.5, backgroundColor: colors.surface },
   exerciseHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  historyBtn: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radii.sm,
+  },
+  historyBtnText: {
+    ...typography.caption,
+    color: colors.primary,
+    fontWeight: '700',
+  },
   activeNowBadge: {
     backgroundColor: colors.accent,
     paddingHorizontal: 6,
@@ -978,11 +1404,50 @@ const styles = StyleSheet.create({
     borderRadius: radii.sm,
   },
   activeNowText: { ...typography.caption, color: colors.background, fontWeight: '800', fontSize: 10 },
+  suggestionBanner: {
+    marginTop: spacing.xs,
+    padding: spacing.xs,
+    backgroundColor: colors.surface,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.accent,
+  },
+  suggestionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  suggestionTitle: {
+    ...typography.caption,
+    color: colors.accent,
+    fontWeight: '700',
+  },
+  useSuggestionPill: {
+    backgroundColor: colors.accent,
+    borderRadius: radii.pill,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  useSuggestionPillText: {
+    fontSize: 10,
+    fontFamily: fonts.bold,
+    color: colors.background,
+  },
+  suggestionDetails: {
+    ...typography.caption,
+    color: colors.text,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  suggestionNote: {
+    color: colors.textMuted,
+    fontWeight: '400',
+  },
   lastSessionBox: {
     marginTop: spacing.sm,
     padding: spacing.sm,
     backgroundColor: colors.surface,
-    borderRadius: 8,
+    borderRadius: radii.sm,
   },
   loggedSetRow: {
     flexDirection: 'row',

@@ -1,3 +1,4 @@
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import HowToPanel from '../components/HowToPanel';
@@ -6,10 +7,13 @@ import { Button, Card, EmptyState, Label, ScreenContainer, SectionTitle, TextInp
 import { useAuth } from '../hooks/useAuth';
 import { MUSCLE_GROUPS } from '../lib/muscles';
 import { supabase } from '../lib/supabase';
-import { colors, spacing, typography } from '../theme/theme';
+import { WorkoutsStackParamList } from '../navigation/types';
+import { colors, radii, spacing, typography } from '../theme/theme';
 import { Exercise } from '../types/db';
 
-export default function ExerciseLibraryScreen() {
+type Props = NativeStackScreenProps<WorkoutsStackParamList, 'ExerciseLibrary'>;
+
+export default function ExerciseLibraryScreen({ navigation }: Props) {
   const { session } = useAuth();
   const [query, setQuery] = useState('');
   const [muscleFilter, setMuscleFilter] = useState('All');
@@ -106,10 +110,20 @@ export default function ExerciseLibraryScreen() {
         }
         renderItem={({ item }) => (
           <Card style={styles.exerciseCard}>
-            <Text style={typography.h3}>{item.name}</Text>
-            <Text style={typography.bodyMuted}>
-              {[item.muscle_group, item.equipment].filter(Boolean).join(' - ')}
-            </Text>
+            <View style={styles.cardHeaderRow}>
+              <View style={styles.exerciseTitleCol}>
+                <Text style={typography.h3}>{item.name}</Text>
+                <Text style={typography.bodyMuted}>
+                  {[item.muscle_group, item.equipment].filter(Boolean).join(' - ')}
+                </Text>
+              </View>
+              <Pressable
+                style={styles.historyBtn}
+                onPress={() => navigation.navigate('ExerciseHistory', { exerciseId: item.id })}
+              >
+                <Text style={styles.historyBtnText}>History</Text>
+              </Pressable>
+            </View>
             {item.instructions ? <Text style={styles.instructions}>{item.instructions}</Text> : null}
             <HowToPanel exercise={item} />
           </Card>
@@ -127,6 +141,28 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', marginTop: spacing.sm },
   flexButton: { flex: 1, marginRight: spacing.sm },
   exerciseCard: { marginBottom: spacing.sm },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  exerciseTitleCol: {
+    flex: 1,
+    marginRight: spacing.sm,
+  },
+  historyBtn: {
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radii.sm,
+  },
+  historyBtnText: {
+    ...typography.caption,
+    color: colors.primary,
+    fontWeight: '700',
+  },
   instructions: { ...typography.bodyMuted, marginTop: spacing.xs },
   listContent: { paddingBottom: spacing.xl },
   count: { ...typography.caption, marginTop: spacing.sm, marginBottom: spacing.sm },

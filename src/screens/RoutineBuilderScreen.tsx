@@ -4,14 +4,17 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import ActiveGymSwitcher from '../components/ActiveGymSwitcher';
 import ExercisePickerModal from '../components/ExercisePickerModal';
 import HowToPanel from '../components/HowToPanel';
+import SetRowList from '../components/SetRowList';
+import UnitGear from '../components/UnitGear';
+import { useTutorial } from '../components/TutorialProvider';
 import { Button, Card, EmptyState, Label, ScreenContainer, SectionTitle, TextInput } from '../components/ui';
 import { useActiveGymProfile } from '../hooks/useActiveGymProfile';
 import { useAuth } from '../hooks/useAuth';
 import { isExerciseAllowed } from '../lib/equipmentPolicy';
-import { getDropSetHelperText, getTechniqueHelperText, getTechniqueLabel } from '../lib/liveWorkoutMachine';
+import { getTechniqueHelperText, getTechniqueLabel } from '../lib/liveWorkoutMachine';
 import { supabase } from '../lib/supabase';
 import { displayWeight, toStorageWeightKg } from '../lib/units';
-import { fetchRoutineWithBlocks, RoutineBlockDraft, RoutineDropStepDraft, RoutineExerciseDraft } from '../lib/workoutPlan';
+import { fetchRoutineWithBlocks, RoutineBlockDraft, RoutineExerciseDraft, DraftSet } from '../lib/workoutPlan';
 import { WorkoutsStackParamList } from '../navigation/types';
 import { colors, radii, spacing, typography } from '../theme/theme';
 import { BlockType, Exercise, WeightUnit } from '../types/db';
@@ -20,8 +23,10 @@ type Props = NativeStackScreenProps<WorkoutsStackParamList, 'RoutineBuilder'>;
 
 export default function RoutineBuilderScreen({ route, navigation }: Props) {
   const { session, profile } = useAuth();
+  const { openTutorial } = useTutorial();
   const { activeGym } = useActiveGymProfile();
   const defaultUnit: WeightUnit = profile?.weight_unit ?? 'kg';
+  const [editorUnit, setEditorUnit] = useState<WeightUnit>(defaultUnit);
   const routineId = route.params?.routineId;
 
   const [name, setName] = useState('');
@@ -54,6 +59,12 @@ export default function RoutineBuilderScreen({ route, navigation }: Props) {
       weight_unit: null,
       rest_seconds: '90',
       drop_steps: [],
+      sets: [0, 1, 2].map((index) => ({
+        key: `${exercise.id}-set-${index}-${Date.now()}`,
+        kind: 'regular' as const,
+        reps: '10',
+        weight: '',
+      })),
     };
 
     const newBlock: RoutineBlockDraft = {
@@ -180,6 +191,67 @@ export default function RoutineBuilderScreen({ route, navigation }: Props) {
     );
   };
 
+  const convertDisplayWeight = (value: string, from: WeightUnit, to: WeightUnit) => {
+    const parsed = parseFloat(value);
+    if (!value || Number.isNaN(parsed)) return value;
+    return displayWeight(toStorageWeightKg(parsed, from), to).toFixed(1);
+  };
+
+  const changeEditorUnit = (next: WeightUnit) => {
+    if (next === editorUnit) return;
+    setBlocks((prev) =>
+      prev.map((block) => ({
+        ...block,
+        exercises: block.exercises.map((exercise) => ({
+          ...exercise,
+          target_weight: convertDisplayWeight(exercise.target_weight, editorUnit, next),
+          sets: (exercise.sets ?? []).map((set) => ({
+            ...set,
+            weight: convertDisplayWeight(set.weight, editorUnit, next),
+          })),
+          drop_steps: exercise.drop_steps.map((drop) => ({
+            ...drop,
+            target_weight: convertDisplayWeight(drop.target_weight, editorUnit, next),
+          })),
+        })),
+      }))
+    );
+    setEditorUnit(next);
+  };
+
+  const updateExerciseSets = (blockTempId: string, exTempId: string, sets: DraftSet[]) => {
+    const regular = sets.filter((set) => set.kind === 'regular');
+    const drops = sets.filter((set) => set.kind === 'drop');
+    setBlocks((prev) =>
+      prev.map((block) => {
+        if (block.tempId !== blockTempId) return block;
+        const exercises = block.exercises.map((exercise) => {
+          if (exercise.tempId !== exTempId) return exercise;
+          return {
+            ...exercise,
+            sets,
+            target_sets: String(Math.max(regular.length, 1)),
+            target_reps: regular[0]?.reps ?? exercise.target_reps,
+            target_weight: regular[0]?.weight ?? '',
+            drop_steps: drops.map((drop, index) => ({
+              tempId: drop.key,
+              drop_index: index + 1,
+              target_reps: drop.reps,
+              target_weight: drop.weight,
+              weight_unit: null,
+            })),
+          };
+        });
+        return {
+          ...block,
+          exercises,
+          target_rounds:
+            block.block_type === 'straight' ? String(Math.max(regular.length, 1)) : block.target_rounds,
+        };
+      })
+    );
+  };
+
   const updateExercise = (
     blockTempId: string,
     exTempId: string,
@@ -197,126 +269,18 @@ export default function RoutineBuilderScreen({ route, navigation }: Props) {
     );
   };
 
-  const handleExerciseUnitChange = (
-    blockTempId: string,
-    exTempId: string,
-    newUnit: WeightUnit | null
-  ) => {
-    setBlocks((prev) =>
-      prev.map((b) => {
-        if (b.tempId !== blockTempId) return b;
-        return {
-          ...b,
-          exercises: b.exercises.map((e) => {
-            if (e.tempId !== exTempId) return e;
-            const prevEffectiveUnit = e.weight_unit ?? defaultUnit;
-            const nextEffectiveUnit = newUnit ?? defaultUnit;
-            let newWeight = e.target_weight;
-            if (prevEffectiveUnit !== nextEffectiveUnit && e.target_weight.trim() !== '') {
-              const val = parseFloat(e.target_weight);
-              if (!Number.isNaN(val)) {
-                const kg = toStorageWeightKg(val, prevEffectiveUnit);
-                const converted = displayWeight(kg, nextEffectiveUnit);
-                newWeight = String(Math.round(converted * 10) / 10);
-              }
-            }
-            return {
-              ...e,
-              weight_unit: newUnit,
-              target_weight: newWeight,
-            };
-          }),
-        };
-      })
-    );
-  };
-
   const removeExercise = (blockTempId: string, exTempId: string) => {
     setBlocks((prev) => {
-      const next = prev.map((b) => {
-        if (b.tempId !== blockTempId) return b;
+      const next = prev.map((block) => {
+        if (block.tempId !== blockTempId) return block;
         return {
-          ...b,
-          exercises: b.exercises.filter((e) => e.tempId !== exTempId),
+          ...block,
+          exercises: block.exercises.filter((exercise) => exercise.tempId !== exTempId),
         };
       });
-      return next.filter((b) => b.exercises.length > 0);
+      return next.filter((block) => block.exercises.length > 0);
     });
     setSelectedExIds((prev) => prev.filter((id) => id !== exTempId));
-  };
-
-  const addDropStep = (blockTempId: string, exTempId: string) => {
-    setBlocks((prev) =>
-      prev.map((b) => {
-        if (b.tempId !== blockTempId) return b;
-        return {
-          ...b,
-          exercises: b.exercises.map((e) => {
-            if (e.tempId !== exTempId) return e;
-            if (e.drop_steps.length >= 3) return e;
-            const nextIndex = e.drop_steps.length + 1;
-            const defaultWeight = e.target_weight ? String(Math.max(0, Math.round(parseFloat(e.target_weight) * 0.8 * 10) / 10)) : '';
-            const newDrop: RoutineDropStepDraft = {
-              tempId: `drop-${Date.now()}-${nextIndex}`,
-              drop_index: nextIndex,
-              target_reps: e.target_reps || '10',
-              target_weight: defaultWeight,
-              weight_unit: e.weight_unit,
-            };
-            return {
-              ...e,
-              drop_steps: [...e.drop_steps, newDrop],
-            };
-          }),
-        };
-      })
-    );
-  };
-
-  const updateDropStep = (
-    blockTempId: string,
-    exTempId: string,
-    dropTempId: string,
-    field: keyof RoutineDropStepDraft,
-    value: any
-  ) => {
-    setBlocks((prev) =>
-      prev.map((b) => {
-        if (b.tempId !== blockTempId) return b;
-        return {
-          ...b,
-          exercises: b.exercises.map((e) => {
-            if (e.tempId !== exTempId) return e;
-            return {
-              ...e,
-              drop_steps: e.drop_steps.map((d) =>
-                d.tempId === dropTempId ? { ...d, [field]: value } : d
-              ),
-            };
-          }),
-        };
-      })
-    );
-  };
-
-  const removeDropStep = (blockTempId: string, exTempId: string, dropTempId: string) => {
-    setBlocks((prev) =>
-      prev.map((b) => {
-        if (b.tempId !== blockTempId) return b;
-        return {
-          ...b,
-          exercises: b.exercises.map((e) => {
-            if (e.tempId !== exTempId) return e;
-            const filtered = e.drop_steps.filter((d) => d.tempId !== dropTempId);
-            const reindexed = filtered.map((d, i) => ({ ...d, drop_index: i + 1 }));
-            return {
-              ...e,
-              drop_steps: reindexed,
-            };
-          }),
-        };
-      })
-    );
   };
 
   const moveBlock = (index: number, direction: 'up' | 'down') => {
@@ -392,7 +356,15 @@ export default function RoutineBuilderScreen({ route, navigation }: Props) {
 
       for (let bIndex = 0; bIndex < blocks.length; bIndex++) {
         const blockDraft = blocks[bIndex];
-        const roundsVal = parseInt(blockDraft.target_rounds, 10) || 3;
+        const roundsVal =
+          blockDraft.block_type === 'straight'
+            ? Math.max(
+                1,
+                (blockDraft.exercises[0]?.sets ?? []).filter((set) => set.kind === 'regular').length ||
+                  parseInt(blockDraft.target_rounds, 10) ||
+                  3
+              )
+            : parseInt(blockDraft.target_rounds, 10) || 3;
         const restVal = parseInt(blockDraft.rest_seconds, 10) || 90;
 
         // 2. Insert new block with order_index = orderOffset + bIndex
@@ -416,8 +388,18 @@ export default function RoutineBuilderScreen({ route, navigation }: Props) {
 
         // 3. For EACH block, insert ALL member routine_exercises in a SINGLE .insert([...])
         const exInserts = blockDraft.exercises.map((exDraft, eIndex) => {
-          const effectiveUnit = exDraft.weight_unit ?? defaultUnit;
-          const parsedWeight = parseFloat(exDraft.target_weight);
+          const regular = (exDraft.sets ?? []).filter((set) => set.kind === 'regular');
+          const first = regular[0];
+          const parsedWeight = parseFloat(first?.weight ?? exDraft.target_weight);
+          const plannedSets = (exDraft.sets ?? []).map((set) => {
+            const parsed = parseFloat(set.weight);
+            return {
+              kind: set.kind,
+              reps: parseInt(set.reps, 10) || 10,
+              weight_kg:
+                Number.isNaN(parsed) || parsed <= 0 ? null : toStorageWeightKg(parsed, editorUnit),
+            };
+          });
           return {
             routine_id: currentRoutineId,
             block_id: createdBlock.id,
@@ -425,13 +407,14 @@ export default function RoutineBuilderScreen({ route, navigation }: Props) {
             exercise_id: exDraft.exercise.id,
             order_index: overallExerciseIndex++,
             target_sets: roundsVal,
-            target_reps: parseInt(exDraft.target_reps, 10) || 10,
+            target_reps: parseInt(first?.reps ?? exDraft.target_reps, 10) || 10,
             target_weight_kg:
               Number.isNaN(parsedWeight) || parsedWeight <= 0
                 ? null
-                : toStorageWeightKg(parsedWeight, effectiveUnit),
-            weight_unit: exDraft.weight_unit,
+                : toStorageWeightKg(parsedWeight, editorUnit),
+            weight_unit: null,
             rest_seconds: restVal,
+            planned_sets: plannedSets,
           };
         });
 
@@ -450,10 +433,8 @@ export default function RoutineBuilderScreen({ route, navigation }: Props) {
           if (exDraft.drop_steps.length > 0) {
             const createdEx =
               createdExercises.find((ce) => ce.block_position === eIndex) ?? createdExercises[eIndex];
-            const effectiveUnit = exDraft.weight_unit ?? defaultUnit;
             exDraft.drop_steps.forEach((d, dIdx) => {
               const dParsedWeight = parseFloat(d.target_weight);
-              const dEffectiveUnit = d.weight_unit ?? effectiveUnit;
               dropInserts.push({
                 routine_exercise_id: createdEx.id,
                 drop_index: dIdx + 1,
@@ -461,8 +442,8 @@ export default function RoutineBuilderScreen({ route, navigation }: Props) {
                 target_weight_kg:
                   Number.isNaN(dParsedWeight) || dParsedWeight <= 0
                     ? null
-                    : toStorageWeightKg(dParsedWeight, dEffectiveUnit),
-                weight_unit: d.weight_unit,
+                    : toStorageWeightKg(dParsedWeight, editorUnit),
+                weight_unit: null,
               });
             });
           }
@@ -560,7 +541,13 @@ export default function RoutineBuilderScreen({ route, navigation }: Props) {
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={typography.h1}>{routineId ? 'Edit routine' : 'New routine'}</Text>
+        <View style={styles.titleRow}>
+          <Text style={typography.h1}>{routineId ? 'Edit routine' : 'New routine'}</Text>
+          <UnitGear unit={editorUnit} onChange={changeEditorUnit} />
+        </View>
+        <View style={styles.field}>
+          <Button title="How to build a routine" variant="secondary" onPress={openTutorial} />
+        </View>
         <ActiveGymSwitcher
           compact
           onManageGyms={() => {
@@ -663,14 +650,16 @@ export default function RoutineBuilderScreen({ route, navigation }: Props) {
               </View>
 
               <View style={styles.blockRoundsRow}>
-                <View style={styles.smallInput}>
-                  <Label>{isGroup ? 'Rounds' : 'Sets'}</Label>
-                  <TextInput
-                    keyboardType="number-pad"
-                    value={block.target_rounds}
-                    onChangeText={(v) => updateBlockRounds(block.tempId, v)}
-                  />
-                </View>
+                {isGroup && (
+                  <View style={styles.smallInput}>
+                    <Label>Rounds</Label>
+                    <TextInput
+                      keyboardType="number-pad"
+                      value={block.target_rounds}
+                      onChangeText={(v) => updateBlockRounds(block.tempId, v)}
+                    />
+                  </View>
+                )}
                 <View style={styles.smallInput}>
                   <Label>{isGroup ? 'Rest after round (s)' : 'Rest (s)'}</Label>
                   <TextInput
@@ -682,7 +671,6 @@ export default function RoutineBuilderScreen({ route, navigation }: Props) {
               </View>
 
               {block.exercises.map((exDraft, eIndex) => {
-                const effectiveUnit = exDraft.weight_unit ?? defaultUnit;
                 const isSelected = selectedExIds.includes(exDraft.tempId);
                 const isAllowed = isExerciseAllowed(exDraft.exercise, gymPolicy);
 
@@ -722,156 +710,76 @@ export default function RoutineBuilderScreen({ route, navigation }: Props) {
 
                     <HowToPanel exercise={exDraft.exercise} />
 
-                    <View style={styles.row}>
-                      <View style={styles.smallInput}>
-                        <Label>Target reps</Label>
-                        <TextInput
-                          keyboardType="number-pad"
-                          value={exDraft.target_reps}
-                          onChangeText={(v) =>
-                            updateExercise(block.tempId, exDraft.tempId, 'target_reps', v)
-                          }
-                        />
-                      </View>
-                      <View style={styles.smallInput}>
-                        <Label>Target weight ({effectiveUnit})</Label>
-                        <TextInput
-                          keyboardType="decimal-pad"
-                          value={exDraft.target_weight}
-                          placeholder="Optional"
-                          onChangeText={(v) =>
-                            updateExercise(block.tempId, exDraft.tempId, 'target_weight', v)
-                          }
-                        />
-                      </View>
-                    </View>
-
-                    <View style={styles.unitSelectorContainer}>
-                      <View style={styles.unitChips}>
-                        <Pressable
-                          onPress={() =>
-                            handleExerciseUnitChange(block.tempId, exDraft.tempId, null)
-                          }
-                          style={[
-                            styles.unitChip,
-                            exDraft.weight_unit === null && styles.unitChipActive,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.unitChipText,
-                              exDraft.weight_unit === null && styles.unitChipTextActive,
-                            ]}
-                          >
-                            Default ({defaultUnit})
-                          </Text>
-                        </Pressable>
-                        <Pressable
-                          onPress={() =>
-                            handleExerciseUnitChange(block.tempId, exDraft.tempId, 'kg')
-                          }
-                          style={[
-                            styles.unitChip,
-                            exDraft.weight_unit === 'kg' && styles.unitChipActive,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.unitChipText,
-                              exDraft.weight_unit === 'kg' && styles.unitChipTextActive,
-                            ]}
-                          >
-                            kg
-                          </Text>
-                        </Pressable>
-                        <Pressable
-                          onPress={() =>
-                            handleExerciseUnitChange(block.tempId, exDraft.tempId, 'lb')
-                          }
-                          style={[
-                            styles.unitChip,
-                            exDraft.weight_unit === 'lb' && styles.unitChipActive,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.unitChipText,
-                              exDraft.weight_unit === 'lb' && styles.unitChipTextActive,
-                            ]}
-                          >
-                            lb
-                          </Text>
-                        </Pressable>
-                      </View>
-                    </View>
-
-                    {/* Drop Sets Configuration */}
-                    <View style={styles.dropSetsSection}>
-                      <View style={styles.dropSetsHeader}>
-                        <View>
-                          <Text style={styles.dropSetsTitle}>⚡ Drop sets (final round only)</Text>
-                          <Text style={styles.dropSetsHelper}>{getDropSetHelperText()}</Text>
-                        </View>
-                        {exDraft.drop_steps.length < 3 && (
-                          <Pressable
-                            style={styles.addDropBtn}
-                            onPress={() => addDropStep(block.tempId, exDraft.tempId)}
-                          >
-                            <Text style={styles.addDropBtnText}>+ Add drop</Text>
-                          </Pressable>
-                        )}
-                      </View>
-
-                      {exDraft.drop_steps.map((drop) => {
-                        return (
-                          <View key={drop.tempId} style={styles.dropStepRow}>
-                            <View style={styles.dropStepBadge}>
-                              <Text style={styles.dropStepBadgeText}>Drop {drop.drop_index}</Text>
-                            </View>
-                            <View style={styles.dropInput}>
-                              <TextInput
-                                keyboardType="number-pad"
-                                placeholder="Reps"
-                                value={drop.target_reps}
-                                onChangeText={(v) =>
-                                  updateDropStep(
-                                    block.tempId,
-                                    exDraft.tempId,
-                                    drop.tempId,
-                                    'target_reps',
-                                    v
-                                  )
-                                }
-                              />
-                            </View>
-                            <View style={styles.dropInput}>
-                              <TextInput
-                                keyboardType="decimal-pad"
-                                placeholder={`Wt (${effectiveUnit})`}
-                                value={drop.target_weight}
-                                onChangeText={(v) =>
-                                  updateDropStep(
-                                    block.tempId,
-                                    exDraft.tempId,
-                                    drop.tempId,
-                                    'target_weight',
-                                    v
-                                  )
-                                }
-                              />
-                            </View>
-                            <Pressable
-                              onPress={() =>
-                                removeDropStep(block.tempId, exDraft.tempId, drop.tempId)
-                              }
-                              style={styles.dropRemoveBtn}
-                            >
-                              <Text style={styles.remove}>✕</Text>
-                            </Pressable>
-                          </View>
-                        );
+                    <SetRowList
+                      unit={editorUnit}
+                      rows={(exDraft.sets ?? []).map((set) => {
+                        const regularBefore =
+                          (exDraft.sets ?? [])
+                            .filter((item) => item.kind === 'regular')
+                            .findIndex((item) => item.key === set.key) + 1;
+                        const dropBefore =
+                          (exDraft.sets ?? [])
+                            .filter((item) => item.kind === 'drop')
+                            .findIndex((item) => item.key === set.key) + 1;
+                        const regularCount = (exDraft.sets ?? []).filter((item) => item.kind === 'regular').length;
+                        return {
+                          key: set.key,
+                          label: set.kind === 'drop' ? `Drop ${dropBefore}` : `Set ${regularBefore}`,
+                          detail: set.weight ? `${set.weight} × ${set.reps}` : `${set.reps} reps`,
+                          reps: set.reps,
+                          weight: set.weight,
+                          canRemove: set.kind === 'drop' || regularCount > 1,
+                        };
                       })}
-                    </View>
+                      onAdd={() => {
+                        const sets = exDraft.sets ?? [];
+                        const regular = sets.filter((set) => set.kind === 'regular');
+                        const last = regular[regular.length - 1];
+                        updateExerciseSets(block.tempId, exDraft.tempId, [
+                          ...sets,
+                          {
+                            key: `set-${Date.now()}`,
+                            kind: 'regular',
+                            reps: last?.reps ?? '10',
+                            weight: last?.weight ?? '',
+                          },
+                        ]);
+                      }}
+                      onCommit={(key, reps, weight) => {
+                        updateExerciseSets(
+                          block.tempId,
+                          exDraft.tempId,
+                          (exDraft.sets ?? []).map((set) => (set.key === key ? { ...set, reps, weight } : set))
+                        );
+                      }}
+                      onRemove={(key) => {
+                        updateExerciseSets(
+                          block.tempId,
+                          exDraft.tempId,
+                          (exDraft.sets ?? []).filter((set) => set.key !== key)
+                        );
+                      }}
+                    />
+                    {(exDraft.sets ?? []).filter((set) => set.kind === 'drop').length < 3 && (
+                      <Pressable
+                        style={styles.addDropLink}
+                        onPress={() => {
+                          const sets = exDraft.sets ?? [];
+                          const last = [...sets].reverse().find((set) => set.kind === 'regular');
+                          updateExerciseSets(block.tempId, exDraft.tempId, [
+                            ...sets,
+                            {
+                              key: `drop-${Date.now()}`,
+                              kind: 'drop',
+                              reps: last?.reps ?? '10',
+                              weight: last?.weight ?? '',
+                            },
+                          ]);
+                        }}
+                      >
+                        <Text style={styles.addDropLinkText}>Add drop</Text>
+                      </Pressable>
+                    )}
                   </Card>
                 );
               })}
@@ -897,11 +805,14 @@ export default function RoutineBuilderScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
+  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  addDropLink: { marginTop: spacing.xs, alignSelf: 'flex-start' },
+  addDropLinkText: { ...typography.caption, color: colors.primary },
   content: { paddingBottom: spacing.xl },
   field: { marginTop: spacing.md },
   groupActionBar: {
     marginTop: spacing.md,
-    backgroundColor: '#1C2E24',
+    backgroundColor: colors.surfaceAlt,
     borderColor: colors.accent,
     borderWidth: 1,
     padding: spacing.sm,
@@ -963,7 +874,7 @@ const styles = StyleSheet.create({
   },
   exerciseCardSelected: {
     borderColor: colors.accent,
-    backgroundColor: '#1F2A22',
+    backgroundColor: colors.surface,
   },
   exerciseHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   checkboxArea: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 },

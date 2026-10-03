@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FitTrack — Plasma look mock</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Onest:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #04111c;
+      --plate: rgb(6 16 22 / 0.52);
+      --text: #eef4f6;
+      --muted: rgb(238 244 246 / 0.66);
+      --faint: rgb(238 244 246 / 0.14);
+      --on: rgb(238 244 246 / 0.92);
+      --on-text: #06121a;
+      --focus: #9ff3e4;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      padding: 28px 16px;
+      background:
+        radial-gradient(520px 320px at 50% 18%, rgb(40 120 130 / 0.35), transparent 70%),
+        radial-gradient(420px 280px at 70% 80%, rgb(20 70 110 / 0.45), transparent 72%),
+        var(--bg);
+      color: var(--text);
+      font: 400 15px/1.45 Onest, system-ui, sans-serif;
+    }
+    .note { max-width: 390px; color: var(--muted); font-size: 13px; text-align: center; }
+    .phone {
+      width: 390px;
+      height: 780px;
+      border-radius: 36px;
+      padding: 18px 14px 16px;
+      position: relative;
+      overflow: hidden;
+      background:
+        radial-gradient(280px 180px at 20% 0%, rgb(90 180 170 / 0.18), transparent 70%),
+        linear-gradient(180deg, #07202c, #04111c 46%, #031018);
+      box-shadow: 0 30px 80px rgb(0 0 0 / 0.45);
+    }
+    .plate {
+      background: linear-gradient(165deg, rgb(28 56 68 / 0.55), var(--plate));
+      border: 1px solid var(--faint);
+      border-radius: 22px;
+      box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.22), 0 10px 30px rgb(0 0 0 / 0.18);
+      backdrop-filter: blur(16px);
+    }
+    h1, h2 { font-family: "Cormorant Garamond", Georgia, serif; font-weight: 500; letter-spacing: 0.01em; }
+    h1 { font-size: 42px; line-height: 0.95; }
+    h2 { font-size: 28px; line-height: 1.05; }
+    .kicker { color: var(--muted); font-size: 13px; margin-top: 6px; }
+    .screen { height: 100%; display: flex; flex-direction: column; gap: 12px; padding-bottom: 78px; }
+    .warn { padding: 16px 16px 14px; }
+    .warn p { color: var(--muted); margin: 6px 0 12px; }
+    .btn {
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 16px;
+      font: 500 14px Onest, sans-serif;
+      background: var(--on);
+      color: var(--on-text);
+      cursor: default;
+    }
+    .btn.ghost {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--faint);
+    }
+    .row { display: flex; gap: 8px; }
+    .program { padding: 16px 16px 8px; }
+    .days { margin-top: 12px; }
+    .day {
+      padding: 12px 4px;
+      border-top: 1px solid var(--faint);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .day strong { display: block; font-weight: 500; }
+    .day span { color: var(--muted); font-size: 13px; }
+    .recent { padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; }
+    .pill {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgb(159 243 228 / 0.16);
+      color: var(--focus);
+    }
+    .tabs {
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      bottom: 14px;
+      height: 64px;
+      border-radius: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 6px;
+    }
+    .tab {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      color: var(--muted);
+      font-size: 10px;
+      min-width: 48px;
+    }
+    .tab.on { color: var(--on-text); background: var(--on); border-radius: 999px; padding: 6px 8px 5px; }
+    .tab svg { width: 18px; height: 18px; fill: currentColor; }
+  </style>
+</head>
+<body>
+  <p class="note">CSS stand-in of the plasma glass. The WebGL panels stay in the browser library.</p>
+  <div class="phone">
+    <div class="screen">
+      <header>
+        <h1>Workouts</h1>
+        <p class="kicker">Main gym · free weights</p>
+      </header>
+
+      <section class="plate warn">
+        <h2>Still open</h2>
+        <p>A workout is still open. End it before starting another.</p>
+        <div class="row">
+          <button class="btn" type="button">Resume</button>
+          <button class="btn ghost" type="button">History</button>
+        </div>
+      </section>
+
+      <section class="plate program">
+        <h2>Strength 4-day</h2>
+        <p class="kicker">Oct 1 · 4 days</p>
+        <div class="days">
+          <div class="day">
+            <div><strong>Upper A</strong><span>Horizontal push and pull · 6 exercises</span></div>
+            <button class="btn" type="button">Start</button>
+          </div>
+          <div class="day">
+            <div><strong>Lower A</strong><span>Squat and posterior chain · 5 exercises</span></div>
+            <button class="btn" type="button">Start</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="plate recent">
+        <div>
+          <strong>Workout</strong>
+          <div class="kicker">Sep 24, 6:12 PM · tap to end</div>
+        </div>
+        <span class="pill">In progress</span>
+      </section>
+    </div>
+
+    <nav class="plate tabs" aria-label="Tabs">
+      <div class="tab"><svg viewBox="0 0 24 24"><path d="M12 3 3 11h2v9h5v-6h4v6h5v-9h2z"/></svg>Home</div>
+      <div class="tab"><svg viewBox="0 0 24 24"><path d="M3 17h18v2H3zM4 16l5-6 4 3 7-8 1.5 1.2L13.2 15 9 11 5 16z"/></svg>Weight</div>
+      <div class="tab on"><svg viewBox="0 0 24 24"><path d="M2 9h4v6H2zM18 9h4v6h-4zM6 10.5h3v3H6zM15 10.5h3v3h-3zM9 11.2h6v1.6H9z"/></svg>Workouts</div>
+      <div class="tab"><svg viewBox="0 0 24 24"><path d="M7 3h2.2v18H7zM5.5 6.5h5.2v2H5.5zM5.5 11h5.2v2H5.5zM14 4.5 18.2 6.2 16.8 20h-2.2z"/></svg>Fuel</div>
+      <div class="tab"><svg viewBox="0 0 24 24"><path d="M6 3h2v18H6zM8 4h9l-2.2 3.2L17 10.5H8z"/></svg>Goals</div>
+    </nav>
+  </div>
+</body>
+</html>

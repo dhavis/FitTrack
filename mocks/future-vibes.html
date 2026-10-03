@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FitTrack — two futures</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      background: #07080A;
+      color: #F5F6F7;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+    }
+    body {
+      padding: 32px 24px 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    header {
+      width: 100%;
+      max-width: 900px;
+      margin-bottom: 32px;
+      text-align: center;
+    }
+    header h1 {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #F5F6F7;
+    }
+    header p {
+      font-size: 14px;
+      color: #9AA1A9;
+      margin-top: 6px;
+    }
+
+    /* Container for side-by-side frames with horizontal scroll on narrow screens */
+    .showcase-container {
+      width: 100%;
+      max-width: 900px;
+      overflow-x: auto;
+      padding-bottom: 24px;
+    }
+    .showcase-row {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      min-width: min-content;
+      margin: 0 auto;
+    }
+    .showcase-column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+    .scheme-meta {
+      text-align: center;
+      width: 390px;
+    }
+    .scheme-meta h2 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #F5F6F7;
+    }
+    .scheme-meta p {
+      font-size: 13px;
+      color: #9AA1A9;
+      margin-top: 3px;
+    }
+
+    /* Base Phone structure */
+    .phone {
+      width: 390px;
+      height: 844px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 36px;
+      overflow: hidden;
+      position: relative;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      color: var(--text);
+    }
+    .notch {
+      height: 47px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding: 0 22px 8px;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+      flex-shrink: 0;
+    }
+    .screen {
+      height: 714px;
+      padding: 0 16px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: hidden;
+    }
+    .tabs {
+      height: 83px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      padding: 6px 4px 18px;
+      flex-shrink: 0;
+    }
+    .tabs button {
+      background: none;
+      border: 0;
+      color: var(--text-faint);
+      font-size: 9px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .tabs button.active {
+      color: var(--primary);
+    }
+    .tabs svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+    }
+
+    /* Common layout classes */
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .num {
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum";
+    }
+    .muted { color: var(--text-muted); }
+    .faint { color: var(--text-faint); }
+    .tiny { font-size: 10px; color: var(--text-faint); }
+    .sm { font-size: 12px; }
+
+    .bar {
+      height: 6px;
+      background: var(--border);
+      overflow: hidden;
+    }
+    .bar > i {
+      display: block;
+      height: 100%;
+      background: var(--accent);
+    }
+
+    /* Approach 1: Sixties space-age */
+    .theme-sixties {
+      font-family: 'Exo 2', sans-serif;
+      --bg: #12100E;
+      --surface: #1C1916;
+      --surface-alt: #26211C;
+      --border: #3A332C;
+      --primary: #FF6B2C;
+      --primary-foreground: #1A120C;
+      --accent: #2EC4B6;
+      --text: #F6F0E6;
+      --text-muted: #C4B8A8;
+      --text-faint: #8A7D70;
+    }
+    .theme-sixties .eyebrow {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+    .theme-sixties .eyebrow.hot {
+      color: var(--primary);
+    }
+    .theme-sixties h3 {
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.15;
+      color: var(--text);
+    }
+    .theme-sixties .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 12px;
+    }
+    .theme-sixties .card.tight {
+      padding: 8px 12px;
+      border-radius: 14px;
+    }
+    .theme-sixties .cta {
+      width: 100%;
+      height: 46px;
+      border: 0;
+      border-radius: 999px;
+      background: var(--primary);
+      color: var(--primary-foreground);
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+    }
+    .theme-sixties .chip {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 5px 9px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .theme-sixties .chips {
+      display: flex;
+      gap: 6px;
+      overflow: hidden;
+    }
+    .theme-sixties .ghost-chip {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-family: 'Exo 2', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .theme-sixties .bar {
+      border-radius: 999px;
+    }
+    .theme-sixties .bar > i {
+      border-radius: 999px;
+    }
+    .theme-sixties .week {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+    .theme-sixties .week span {
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: var(--surface-alt);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    .theme-sixties .week span.done {
+      color: var(--accent);
+    }
+    .theme-sixties .week span.now {
+      background: var(--primary);
+      color: var(--primary-foreground);
+      font-weight: 700;
+    }
+
+    /* Approach 2: Futuristic (contemporary) */
+    .theme-futuristic {
+      font-family: 'Space Grotesk', sans-serif;
+      --bg: #07080C;
+      --surface: #10141C;
+      --surface-alt: #171C28;
+      --border: #2A3344;
+      --primary: #E8F1FF;
+      --primary-foreground: #07080C;
+      --accent: #7C6CFF;
+      --text: #F4F7FB;
+      --text-muted: #9AA6B8;
+      --text-faint: #5C6778;
+    }
+    .theme-futuristic .eyebrow {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+    .theme-futuristic .eyebrow.hot {
+      color: var(--primary);
+    }
+    .theme-futuristic h3 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      color: var(--text);
+    }
+    .theme-futuristic .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .theme-futuristic .card.tight {
+      padding: 8px 10px;
+      border-radius: 6px;
+    }
+    .theme-futuristic .cta {
+      width: 100%;
+      height: 46px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--primary);
+      color: var(--primary-foreground);
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+    }
+    .theme-futuristic .chip {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .theme-futuristic .chips {
+      display: flex;
+      gap: 6px;
+      overflow: hidden;
+    }
+    .theme-futuristic .ghost-chip {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .theme-futuristic .bar {
+      border-radius: 2px;
+    }
+    .theme-futuristic .bar > i {
+      border-radius: 2px;
+    }
+    .theme-futuristic .week {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+    .theme-futuristic .week span {
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      background: var(--surface-alt);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    .theme-futuristic .week span.done {
+      color: var(--accent);
+    }
+    .theme-futuristic .week span.now {
+      background: var(--primary);
+      color: var(--primary-foreground);
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>FitTrack — two futures</h1>
+    <p>Same Today Board. Sixties space-age, then a cleaner future.</p>
+  </header>
+
+  <main class="showcase-container">
+    <div class="showcase-row">
+      <!-- Approach 1: Sixties space-age -->
+      <section class="showcase-column">
+        <div class="scheme-meta">
+          <h2>1. Sixties space-age</h2>
+          <p>World's Fair, not a poster clone.</p>
+        </div>
+        <div class="phone theme-sixties" aria-label="Approach 1: Sixties space-age">
+          <div class="notch"><span>9:41</span><span>FitTrack</span></div>
+          <div class="screen">
+            <div class="row">
+              <div>
+                <div class="eyebrow">Today Board</div>
+                <h3>Wed, Sep 23</h3>
+              </div>
+              <button class="ghost-chip">Main Gym</button>
+            </div>
+            <div class="card tight row">
+              <span class="sm"><span style="color:var(--accent);font-weight:700">Ready</span> 9/10</span>
+              <span class="sm muted">Adaptations: none needed</span>
+            </div>
+            <div class="card">
+              <div class="row">
+                <span class="eyebrow hot">Up next · today</span>
+                <span class="sm muted">Chest &amp; triceps</span>
+              </div>
+              <h3 style="margin:4px 0 2px;font-size:22px">Push A</h3>
+              <div class="sm muted num">4 exercises · 14 working sets · ~50 min</div>
+              <div class="chips" style="margin:10px 0">
+                <span class="chip">Bench 4×6</span>
+                <span class="chip">Incline DB 3×8</span>
+                <span class="chip">Dips 3×10</span>
+                <span class="chip">Tri ext 4×12</span>
+              </div>
+              <button class="cta">Start Push A</button>
+            </div>
+            <div class="split">
+              <div class="card tight">
+                <div class="eyebrow">Fuel</div>
+                <div class="num" style="font-size:16px;font-weight:700;color:var(--accent);margin:2px 0">142 / 180 g P</div>
+                <div class="bar" style="margin:6px 0"><i style="width:79%"></i></div>
+                <div class="sm muted num">1,640 / 2,200 kcal</div>
+              </div>
+              <div class="card tight">
+                <div class="eyebrow">Weight</div>
+                <div class="num" style="font-size:16px;font-weight:700;margin:2px 0">82.4 kg</div>
+                <div class="sm muted num" style="margin-top:10px">7d avg 82.6 · −0.2</div>
+              </div>
+            </div>
+            <div class="card tight">
+              <div class="week">
+                <span class="done">M</span><span class="done">T</span><span class="now">W</span>
+                <span>T</span><span>F</span><span>S</span><span>S</span>
+              </div>
+              <div class="sm" style="margin-top:6px;color:var(--accent);font-weight:600">4-day streak</div>
+            </div>
+            <div>
+              <div class="sm muted">Coach: rest on bench set to 2:30. Protein pace is solid.</div>
+              <div class="tiny" style="margin-top:2px">Non-medical fitness tracker.</div>
+            </div>
+          </div>
+          <nav class="tabs">
+            <button class="active"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4z"/></svg>Dashboard</button>
+            <button><svg viewBox="0 0 24 24"><path d="M4 16c3-6 6-2 8 0s5-6 8-10"/></svg>Weight</button>
+            <button><svg viewBox="0 0 24 24"><path d="M3 10h4l2-2h6l2 2h4v4h-4l-2 2H9l-2-2H3z"/></svg>Workouts</button>
+            <button><svg viewBox="0 0 24 24"><path d="M7 4v16M12 8c4 0 5 3 5 8H12V8z"/></svg>Nutrition</button>
+            <button><svg viewBox="0 0 24 24"><path d="M5 20V5h10l-2 3 2 3H5"/></svg>Goals</button>
+            <button><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 4v2M12 18v2M4 12h2M18 12h2"/></svg>Settings</button>
+          </nav>
+        </div>
+      </section>
+
+      <!-- Approach 2: Futuristic -->
+      <section class="showcase-column">
+        <div class="scheme-meta">
+          <h2>2. Futuristic</h2>
+          <p>Precise and forward. No nostalgia.</p>
+        </div>
+        <div class="phone theme-futuristic" aria-label="Approach 2: Futuristic">
+          <div class="notch"><span>9:41</span><span>FitTrack</span></div>
+          <div class="screen">
+            <div class="row">
+              <div>
+                <div class="eyebrow">Today Board</div>
+                <h3>Wed, Sep 23</h3>
+              </div>
+              <button class="ghost-chip">Main Gym</button>
+            </div>
+            <div class="card tight row">
+              <span class="sm"><span style="color:var(--accent);font-weight:700">Ready</span> 9/10</span>
+              <span class="sm muted">Adaptations: none needed</span>
+            </div>
+            <div class="card">
+              <div class="row">
+                <span class="eyebrow hot">Up next · today</span>
+                <span class="sm muted">Chest &amp; triceps</span>
+              </div>
+              <h3 style="margin:4px 0 2px;font-size:22px">Push A</h3>
+              <div class="sm muted num">4 exercises · 14 working sets · ~50 min</div>
+              <div class="chips" style="margin:10px 0">
+                <span class="chip">Bench 4×6</span>
+                <span class="chip">Incline DB 3×8</span>
+                <span class="chip">Dips 3×10</span>
+                <span class="chip">Tri ext 4×12</span>
+              </div>
+              <button class="cta">Start Push A</button>
+            </div>
+            <div class="split">
+              <div class="card tight">
+                <div class="eyebrow">Fuel</div>
+                <div class="num" style="font-size:16px;font-weight:700;color:var(--accent);margin:2px 0">142 / 180 g P</div>
+                <div class="bar" style="margin:6px 0"><i style="width:79%"></i></div>
+                <div class="sm muted num">1,640 / 2,200 kcal</div>
+              </div>
+              <div class="card tight">
+                <div class="eyebrow">Weight</div>
+                <div class="num" style="font-size:16px;font-weight:700;margin:2px 0">82.4 kg</div>
+                <div class="sm muted num" style="margin-top:10px">7d avg 82.6 · −0.2</div>
+              </div>
+            </div>
+            <div class="card tight">
+              <div class="week">
+                <span class="done">M</span><span class="done">T</span><span class="now">W</span>
+                <span>T</span><span>F</span><span>S</span><span>S</span>
+              </div>
+              <div class="sm" style="margin-top:6px;color:var(--accent);font-weight:600">4-day streak</div>
+            </div>
+            <div>
+              <div class="sm muted">Coach: rest on bench set to 2:30. Protein pace is solid.</div>
+              <div class="tiny" style="margin-top:2px">Non-medical fitness tracker.</div>
+            </div>
+          </div>
+          <nav class="tabs">
+            <button class="active"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4z"/></svg>Dashboard</button>
+            <button><svg viewBox="0 0 24 24"><path d="M4 16c3-6 6-2 8 0s5-6 8-10"/></svg>Weight</button>
+            <button><svg viewBox="0 0 24 24"><path d="M3 10h4l2-2h6l2 2h4v4h-4l-2 2H9l-2-2H3z"/></svg>Workouts</button>
+            <button><svg viewBox="0 0 24 24"><path d="M7 4v16M12 8c4 0 5 3 5 8H12V8z"/></svg>Nutrition</button>
+            <button><svg viewBox="0 0 24 24"><path d="M5 20V5h10l-2 3 2 3H5"/></svg>Goals</button>
+            <button><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 4v2M12 18v2M4 12h2M18 12h2"/></svg>Settings</button>
+          </nav>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

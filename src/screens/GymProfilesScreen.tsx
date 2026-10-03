@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
   content: { paddingBottom: spacing.xl },
   activeBanner: {
     marginTop: spacing.md,
-    backgroundColor: '#1B2C21',
+    backgroundColor: colors.primaryMuted,
     borderColor: colors.primary,
     borderWidth: 1.5,
   },

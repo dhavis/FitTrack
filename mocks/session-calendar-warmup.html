@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FitTrack — Calendar, units, warm-ups</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #04111c;
+      --text: #eef4f6;
+      --muted: rgb(238 244 246 / 0.66);
+      --line: rgb(238 244 246 / 0.22);
+      --on: #e8f1ff;
+      --on-text: #06121a;
+      --mint: #9ff3e4;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 28px;
+      padding: 28px 16px 48px;
+      background: #04111c;
+      color: var(--text);
+      font: 400 15px/1.4 "Space Grotesk", system-ui, sans-serif;
+    }
+    .col { width: 390px; display: flex; flex-direction: column; gap: 10px; }
+    .note { color: var(--muted); font-size: 13px; }
+    .phone {
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      padding: 20px 14px 24px;
+      background: linear-gradient(180deg, rgb(18 48 58 / 0.55), transparent 28%), var(--bg);
+    }
+    .plate {
+      margin-top: 14px;
+      background: linear-gradient(180deg, rgb(36 64 74 / 0.42), rgb(6 16 22 / 0.72));
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16);
+      padding: 14px;
+    }
+    h1 { font-size: 32px; font-weight: 600; letter-spacing: -0.04em; }
+    h2 { font-size: 18px; font-weight: 600; }
+    .kicker { color: var(--muted); font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; }
+    .month { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; }
+    .navbtn, .gear, .today {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      font: 600 13px "Space Grotesk", sans-serif;
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+    .today { letter-spacing: 0.04em; text-transform: uppercase; font-size: 11px; }
+    .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
+    .dow { color: var(--muted); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+    .day {
+      height: 36px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--muted);
+      font: 500 14px "Space Grotesk", sans-serif;
+      cursor: default;
+    }
+    .day.hit { color: var(--on-text); background: var(--mint); cursor: pointer; font-weight: 600; }
+    .day.open { outline: 1px solid var(--on); }
+    .session p { color: var(--muted); margin-top: 4px; }
+    .head { display: flex; justify-content: space-between; align-items: flex-start; }
+    .gear { width: 36px; height: 36px; padding: 0; font-size: 16px; }
+    .units { display: none; margin-top: 12px; }
+    .units.show { display: flex; border: 1px solid var(--line); border-radius: 4px; }
+    .units button {
+      flex: 1;
+      background: transparent;
+      color: var(--text);
+      border: 0;
+      padding: 10px;
+      font: 600 13px "Space Grotesk", sans-serif;
+      cursor: pointer;
+    }
+    .units button.on { background: var(--on); color: var(--on-text); }
+    .set { display: flex; justify-content: space-between; padding: 8px 0; border-top: 1px solid var(--line); color: var(--muted); }
+    .set strong { color: var(--text); font-weight: 500; }
+    .work { color: var(--text); }
+  </style>
+</head>
+<body>
+  <div class="col">
+    <p class="note">Move between months. A filled day opens that session.</p>
+    <div class="phone">
+      <p class="kicker">Workouts</p>
+      <h1 id="month-name">October</h1>
+      <section class="plate">
+        <div class="month">
+          <button class="navbtn" type="button" id="prev" aria-label="Previous month">‹</button>
+          <button class="today" type="button" id="today">Today</button>
+          <button class="navbtn" type="button" id="next" aria-label="Next month">›</button>
+        </div>
+        <div class="grid" id="cal"></div>
+        <div class="session" id="session" hidden>
+          <h2 id="session-title"></h2>
+          <p id="session-meta"></p>
+        </div>
+      </section>
+    </div>
+  </div>
+  <div class="col">
+    <p class="note">Gear opens the unit. Warm-ups come from the last working weight.</p>
+    <div class="phone">
+      <div class="head">
+        <div>
+          <p class="kicker">Session</p>
+          <h1>Upper A</h1>
+        </div>
+        <button class="gear" type="button" id="gear" aria-label="Change units">⚙</button>
+      </div>
+      <div class="units" id="units">
+        <button type="button" class="on" data-unit="kg">kg</button>
+        <button type="button" data-unit="lb">lb</button>
+      </div>
+      <section class="plate">
+        <h2>Bench press</h2>
+        <p class="kicker" style="margin: 10px 0 4px;">Warm-up · from last session</p>
+        <div class="set"><span>Set</span><strong id="w1">40 kg × 5</strong></div>
+        <div class="set"><span>Set</span><strong id="w2">55 kg × 3</strong></div>
+        <div class="set"><span>Set</span><strong id="w3">70 kg × 1</strong></div>
+        <p class="kicker" style="margin: 12px 0 4px;">Working sets</p>
+        <div class="set work"><span>1</span><strong id="s1">80 kg × 5</strong></div>
+        <div class="set work"><span>2</span><strong id="s2">80 kg × 5</strong></div>
+        <div class="set work"><span>3</span><strong id="s3">80 kg × 5</strong></div>
+      </section>
+    </div>
+  </div>
+  <script>
+    const months = [
+      { name: "September", year: 2026, start: 2, days: 30, hits: { 19: "Lower B", 21: "Upper A", 24: "Lower B" } },
+      { name: "October", year: 2026, start: 4, days: 31, hits: { 1: "Upper A", 5: "Lower A", 9: "Upper A" } },
+      { name: "November", year: 2026, start: 0, days: 30, hits: {} }
+    ];
+    let index = 1;
+    const cal = document.getElementById("cal");
+    const session = document.getElementById("session");
+    function render() {
+      const m = months[index];
+      document.getElementById("month-name").textContent = m.name;
+      cal.innerHTML = ["S","M","T","W","T","F","S"].map((d) => `<div class="dow">${d}</div>`).join("");
+      for (let i = 0; i < m.start; i++) cal.insertAdjacentHTML("beforeend", `<div class="day"></div>`);
+      for (let day = 1; day <= m.days; day++) {
+        const name = m.hits[day];
+        const el = document.createElement("button");
+        el.type = "button";
+        el.className = "day" + (name ? " hit" : "");
+        el.textContent = String(day);
+        if (name) el.addEventListener("click", () => {
+          cal.querySelectorAll(".day").forEach((n) => n.classList.remove("open"));
+          el.classList.add("open");
+          session.hidden = false;
+          document.getElementById("session-title").textContent = `${m.name.slice(0, 3)} ${day} · ${name}`;
+          document.getElementById("session-meta").textContent = "Opens the logged session";
+        });
+        cal.appendChild(el);
+      }
+      session.hidden = true;
+    }
+    document.getElementById("prev").onclick = () => { index = Math.max(0, index - 1); render(); };
+    document.getElementById("next").onclick = () => { index = Math.min(months.length - 1, index + 1); render(); };
+    document.getElementById("today").onclick = () => { index = 1; render(); };
+    render();
+
+    const gear = document.getElementById("gear");
+    const units = document.getElementById("units");
+    gear.onclick = () => units.classList.toggle("show");
+    const loads = { kg: ["40 kg × 5", "55 kg × 3", "70 kg × 1", "80 kg × 5"], lb: ["85 lb × 5", "120 lb × 3", "155 lb × 1", "175 lb × 5"] };
+    units.querySelectorAll("button").forEach((btn) => {
+      btn.onclick = () => {
+        units.querySelectorAll("button").forEach((n) => n.classList.remove("on"));
+        btn.classList.add("on");
+        const row = loads[btn.dataset.unit];
+        ["w1","w2","w3","s1"].forEach((id, i) => { document.getElementById(id).textContent = row[i]; });
+        document.getElementById("s2").textContent = row[3];
+        document.getElementById("s3").textContent = row[3];
+      };
+    });
+  </script>
+</body>
+</html>

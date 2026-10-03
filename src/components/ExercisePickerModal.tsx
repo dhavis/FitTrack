@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import ActiveGymSwitcher from './ActiveGymSwitcher';
+import EquipmentFilter from './EquipmentFilter';
 import MuscleFilter from './MuscleFilter';
 import { useActiveGymProfile } from '../hooks/useActiveGymProfile';
 import { isExerciseAllowed } from '../lib/equipmentPolicy';
 import { supabase } from '../lib/supabase';
 import { colors, radii, spacing, typography } from '../theme/theme';
 import { Exercise } from '../types/db';
-import { EmptyState, TextInput } from './ui';
+import { EmptyState, Label, TextInput } from './ui';
 
 export default function ExercisePickerModal({
   visible,
@@ -21,6 +22,7 @@ export default function ExercisePickerModal({
   const { activeGym, refresh } = useActiveGymProfile();
   const [query, setQuery] = useState('');
   const [muscleFilter, setMuscleFilter] = useState('All');
+  const [equipmentFilter, setEquipmentFilter] = useState('All');
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -38,6 +40,7 @@ export default function ExercisePickerModal({
       let req = supabase.from('exercises').select('*').order('name');
       if (query.trim()) req = req.ilike('name', `%${query.trim()}%`);
       if (muscleFilter !== 'All') req = req.eq('muscle_group', muscleFilter);
+      if (equipmentFilter !== 'All') req = req.ilike('equipment', equipmentFilter);
       const { data } = await req;
       if (active) {
         setExercises(data ?? []);
@@ -48,14 +51,23 @@ export default function ExercisePickerModal({
       active = false;
       clearTimeout(handle);
     };
-  }, [visible, query, muscleFilter]);
+  }, [visible, query, muscleFilter, equipmentFilter]);
 
   useEffect(() => {
     if (!visible) {
       setQuery('');
       setMuscleFilter('All');
+      setEquipmentFilter('All');
     }
   }, [visible]);
+
+  const hasActiveFilters = query.trim().length > 0 || muscleFilter !== 'All' || equipmentFilter !== 'All';
+
+  const handleClearFilters = () => {
+    setQuery('');
+    setMuscleFilter('All');
+    setEquipmentFilter('All');
+  };
 
   const gymPolicy = activeGym
     ? {
@@ -68,27 +80,61 @@ export default function ExercisePickerModal({
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={typography.h2}>Choose an exercise</Text>
-          <Pressable onPress={onClose}>
-            <Text style={styles.close}>Close</Text>
-          </Pressable>
+        <View style={styles.controls}>
+          <View style={styles.header}>
+            <Text style={typography.h2}>Choose an exercise</Text>
+            <Pressable onPress={onClose} hitSlop={8} accessibilityRole="button" accessibilityLabel="Close exercise picker">
+              <Text style={styles.close}>Close</Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.switcherWrap}>
+            <ActiveGymSwitcher compact />
+          </View>
+
+          <TextInput
+            placeholder="Search exercises..."
+            value={query}
+            onChangeText={setQuery}
+            style={styles.search}
+            autoCapitalize="none"
+            autoCorrect={false}
+            clearButtonMode="while-editing"
+          />
+
+          <View style={styles.filterSection}>
+            <Label>Muscle</Label>
+            <MuscleFilter selected={muscleFilter} onSelect={setMuscleFilter} wrap />
+          </View>
+
+          <View style={styles.filterSection}>
+            <Label>Equipment</Label>
+            <EquipmentFilter selected={equipmentFilter} onSelect={setEquipmentFilter} wrap />
+          </View>
+
+          <View style={styles.statusBar}>
+            <Text style={styles.countText}>
+              {loading ? 'Searching...' : `${exercises.length} exercise${exercises.length === 1 ? '' : 's'}`}
+            </Text>
+            {hasActiveFilters && (
+              <Pressable
+                onPress={handleClearFilters}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Clear all filters"
+              >
+                <Text style={styles.clearText}>Clear filters</Text>
+              </Pressable>
+            )}
+          </View>
         </View>
 
-        <View style={styles.switcherWrap}>
-          <ActiveGymSwitcher compact />
-        </View>
-
-        <TextInput
-          placeholder="Search exercises..."
-          value={query}
-          onChangeText={setQuery}
-          style={styles.search}
-        />
-        <MuscleFilter selected={muscleFilter} onSelect={setMuscleFilter} />
         <FlatList
+          style={styles.list}
           data={exercises}
           keyExtractor={(item) => item.id}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.listContent}
           renderItem={({ item }) => {
             const allowed = isExerciseAllowed(item, gymPolicy);
 
@@ -126,11 +172,64 @@ export default function ExercisePickerModal({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, paddingTop: 60, paddingHorizontal: spacing.md },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs },
-  close: { color: colors.primary, fontWeight: '700' },
-  switcherWrap: { marginBottom: spacing.xs },
-  search: { marginBottom: spacing.sm },
+  container: {
+    flex: 1,
+    minHeight: 0,
+    backgroundColor: colors.background,
+    paddingTop: 60,
+    paddingHorizontal: spacing.md,
+  },
+  controls: {
+    flexGrow: 0,
+    flexShrink: 0,
+    zIndex: 2,
+    backgroundColor: colors.background,
+  },
+  list: {
+    flex: 1,
+    minHeight: 0,
+    zIndex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  close: {
+    color: colors.primary,
+    fontWeight: '700',
+  },
+  switcherWrap: {
+    marginBottom: spacing.xs,
+  },
+  search: {
+    marginBottom: spacing.xs,
+  },
+  filterSection: {
+    marginBottom: spacing.xs,
+  },
+  statusBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    marginBottom: spacing.xs,
+  },
+  countText: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  clearText: {
+    ...typography.caption,
+    color: colors.primary,
+    fontWeight: '700',
+  },
+  listContent: {
+    paddingBottom: spacing.xl,
+  },
   row: {
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,

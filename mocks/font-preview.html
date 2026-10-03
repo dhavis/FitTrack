@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FitTrack fonts</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Saira:wght@400;500;600;700;800&family=Rajdhani:wght@500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #07080A;
+      color: #F5F6F7;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      padding: 32px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1100px;
+    }
+
+    header {
+      margin-bottom: 28px;
+    }
+
+    header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #F5F6F7;
+      margin-bottom: 6px;
+    }
+
+    header p {
+      font-size: 14px;
+      color: #9AA1A9;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      align-items: start;
+    }
+
+    .column {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .card {
+      background-color: #16191D;
+      border: 1px solid #2A2F36;
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #2A2F36;
+    }
+
+    .font-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: #F5F6F7;
+    }
+
+    .font-label {
+      font-size: 11px;
+      color: #9AA1A9;
+      letter-spacing: 0.02em;
+    }
+
+    .sample-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .sample-label {
+      font-size: 11px;
+      color: #9AA1A9;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .pill-btn {
+      align-self: flex-start;
+      background-color: #FF5A1F;
+      color: #0B0D10;
+      border: none;
+      border-radius: 9999px;
+      padding: 8px 18px;
+      font-size: 15px;
+      line-height: 1.2;
+      cursor: default;
+    }
+
+    .stat-metric {
+      font-size: 36px;
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .nutrition-line {
+      font-size: 14px;
+      font-variant-numeric: tabular-nums;
+      color: #F5F6F7;
+    }
+
+    .coach-line {
+      font-size: 12px;
+      color: #9AA1A9;
+      line-height: 1.4;
+    }
+
+    .sample-text {
+      font-size: 14px;
+      color: #F5F6F7;
+      line-height: 1.4;
+    }
+
+    .column-note {
+      font-size: 12px;
+      color: #9AA1A9;
+      line-height: 1.4;
+      padding: 0 4px;
+    }
+
+    /* Font Families */
+    .font-saira {
+      font-family: 'Saira', sans-serif;
+    }
+
+    .font-rajdhani {
+      font-family: 'Rajdhani', sans-serif;
+    }
+
+    .font-bebas {
+      font-family: 'Bebas Neue', cursive, sans-serif;
+    }
+
+    /* Saira Specifics */
+    .saira-title { font-weight: 800; font-size: 28px; }
+    .saira-btn { font-weight: 700; }
+    .saira-stat { font-weight: 800; }
+    .saira-sub { font-weight: 500; }
+    .saira-coach { font-weight: 500; }
+    .saira-body { font-weight: 400; }
+
+    /* Rajdhani Specifics */
+    .rajdhani-title { font-weight: 700; font-size: 28px; }
+    .rajdhani-btn { font-weight: 700; }
+    .rajdhani-stat { font-weight: 700; }
+    .rajdhani-sub { font-weight: 500; }
+    .rajdhani-coach { font-weight: 500; }
+    .rajdhani-body { font-weight: 500; }
+
+    /* Bebas Neue Specifics (Single weight) */
+    .bebas-title { font-size: 28px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>FitTrack fonts</h1>
+      <p>Saira is the recommendation. The other two were set aside.</p>
+    </header>
+
+    <div class="grid">
+      <!-- Saira Column -->
+      <div class="column">
+        <div class="card font-saira">
+          <div class="card-header">
+            <span class="font-name">Saira</span>
+            <span class="font-label">Recommended · OFL 1.1</span>
+          </div>
+
+          <div class="sample-group">
+            <div class="saira-title">Push A</div>
+          </div>
+
+          <div class="sample-group">
+            <button type="button" class="pill-btn saira-btn">Start Push A</button>
+          </div>
+
+          <div class="sample-group">
+            <div class="stat-metric saira-stat">82.4 kg</div>
+          </div>
+
+          <div class="sample-group">
+            <div class="nutrition-line saira-sub">142 / 180 g protein · 1,640 kcal</div>
+          </div>
+
+          <div class="sample-group">
+            <div class="coach-line saira-coach">Coach: rest on bench set to 2:30. Protein pace is solid.</div>
+          </div>
+
+          <div class="sample-group">
+            <div class="sample-text saira-body">Barbell bench press · 80.0 kg × 8</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rajdhani Column -->
+      <div class="column">
+        <div class="card font-rajdhani">
+          <div class="card-header">
+            <span class="font-name">Rajdhani</span>
+            <span class="font-label">Set aside · display angles</span>
+          </div>
+
+          <div class="sample-group">
+            <div class="rajdhani-title">Push A</div>
+          </div>
+
+          <div class="sample-group">
+            <button type="button" class="pill-btn rajdhani-btn">Start Push A</button>
+          </div>
+
+          <div class="sample-group">
+            <div class="stat-metric rajdhani-stat">82.4 kg</div>
+          </div>
+
+          <div class="sample-group">
+            <div class="nutrition-line rajdhani-sub">142 / 180 g protein · 1,640 kcal</div>
+          </div>
+
+          <div class="sample-group">
+            <div class="coach-line rajdhani-coach">Coach: rest on bench set to 2:30. Protein pace is solid.</div>
+          </div>
+
+          <div class="sample-group">
+            <div class="sample-text rajdhani-body">Barbell bench press · 80.0 kg × 8</div>
+          </div>
+        </div>
+        <div class="column-note">Chamfered corners read like a game HUD at small sizes.</div>
+      </div>
+
+      <!-- Bebas Neue Column -->
+      <div class="column">
+        <div class="card font-bebas">
+          <div class="card-header">
+            <span class="font-name">Bebas Neue</span>
+            <span class="font-label">Set aside · uppercase only</span>
+          </div>
+
+          <div class="sample-group">
+            <div class="bebas-title">Push A</div>
+          </div>
+
+          <div class="sample-group">
+            <button type="button" class="pill-btn">Start Push A</button>
+          </div>
+
+          <div class="sample-group">
+            <div class="stat-metric">82.4 kg</div>
+          </div>
+
+          <div class="sample-group">
+            <div class="nutrition-line">142 / 180 g protein · 1,640 kcal</div>
+          </div>
+
+          <div class="sample-group">
+            <div class="coach-line">Coach: rest on bench set to 2:30. Protein pace is solid.</div>
+          </div>
+
+          <div class="sample-group">
+            <div class="sample-text">Barbell bench press · 80.0 kg × 8</div>
+          </div>
+        </div>
+        <div class="column-note">No lowercase, so notes and chips cannot use it.</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

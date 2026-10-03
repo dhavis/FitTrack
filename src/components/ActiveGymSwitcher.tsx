@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   },
   gymOptionActive: {
     borderColor: colors.primary,
-    backgroundColor: '#1C2920',
+    backgroundColor: colors.primaryMuted,
   },
   gymOptionLeft: {
     flex: 1,

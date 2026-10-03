@@ -1,4 +1,5 @@
 import { BlockType, Exercise, LiveWorkoutPhase, SetType, WeightUnit, WorkoutSet } from '../types/db';
+import { PlannedSet } from './plannedSets';
 
 export interface MachineDropStep {
   id?: string;
@@ -20,6 +21,7 @@ export interface MachineExercise {
   rest_seconds: number;
   exercise?: Exercise;
   drop_steps: MachineDropStep[];
+  planned_sets?: PlannedSet[] | null;
 }
 
 export interface MachineBlock {
@@ -285,7 +287,9 @@ export function deriveCursorFromLoggedSets(
 
   const sortedSets = [...loggedSets].sort((a, b) => a.set_index - b.set_index);
 
-  for (const _set of sortedSets) {
+  for (const logged of sortedSets) {
+    if (logged.set_type === 'warmup') continue;
+    if (logged.round_index != null && logged.round_index < 0) continue;
     const cursor = buildMachineCursor(blocks, state);
     if (cursor.phase === 'complete') break;
 

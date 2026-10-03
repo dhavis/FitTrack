@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FitTrack — Workouts home, one active program</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #04111c;
+      --text: #eef4f6;
+      --muted: rgb(238 244 246 / 0.66);
+      --line: rgb(238 244 246 / 0.22);
+      --on: #e8f1ff;
+      --on-text: #06121a;
+      --mint: #9ff3e4;
+      --danger: #ff5c5c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 28px;
+      padding: 28px 16px 48px;
+      background: #04111c;
+      color: var(--text);
+      font: 400 15px/1.4 "Space Grotesk", system-ui, sans-serif;
+    }
+    .col { width: 390px; display: flex; flex-direction: column; gap: 10px; }
+    .note { color: var(--muted); font-size: 13px; }
+    .phone {
+      height: 780px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      padding: 20px 14px 0;
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgb(18 48 58 / 0.55), transparent 28%), var(--bg);
+    }
+    .plate {
+      background: linear-gradient(180deg, rgb(36 64 74 / 0.42), rgb(6 16 22 / 0.72));
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16);
+    }
+    h1 { font-size: 32px; font-weight: 600; letter-spacing: -0.04em; }
+    h2 { font-size: 18px; font-weight: 600; letter-spacing: -0.03em; }
+    .kicker {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .screen { display: flex; flex-direction: column; gap: 10px; padding-bottom: 72px; }
+    .head { display: flex; justify-content: space-between; align-items: flex-end; }
+    .link { color: var(--on); font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+    .warn, .block { padding: 14px; }
+    .warn p, .meta { color: var(--muted); margin-top: 6px; }
+    .btn {
+      border: 1px solid var(--on);
+      border-radius: 4px;
+      padding: 10px 14px;
+      font: 600 13px "Space Grotesk", sans-serif;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: var(--on);
+      color: var(--on-text);
+    }
+    .btn.ghost { background: transparent; color: var(--text); border-color: var(--line); }
+    .btn.danger { background: transparent; color: var(--danger); border-color: var(--danger); }
+    .row { display: flex; gap: 8px; margin-top: 12px; }
+    .day, .log, .old {
+      padding: 12px 0;
+      border-top: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .day span, .log span, .old span { display: block; color: var(--muted); font-size: 13px; }
+    .tag {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 4px 8px;
+      border: 1px solid var(--mint);
+      border-radius: 4px;
+      color: var(--mint);
+    }
+    .tabs {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      height: 64px;
+      display: flex;
+      border-top: 1px solid var(--line);
+      background: #12242f;
+    }
+    .tab {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #5c6a72;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .tab.on { color: var(--on); box-shadow: inset 0 -2px 0 var(--on); }
+  </style>
+</head>
+<body>
+  <div class="col">
+    <p class="note">Workouts home. One active program. Three recent sessions.</p>
+    <div class="phone">
+      <div class="screen">
+        <header class="head">
+          <div>
+            <h1>Workouts</h1>
+            <p class="kicker">Main gym</p>
+          </div>
+        </header>
+        <section class="plate warn">
+          <h2>Still open</h2>
+          <p>End this workout before starting another.</p>
+          <div class="row"><button class="btn" type="button">Resume</button></div>
+        </section>
+        <section class="plate block">
+          <div class="head">
+            <h2>Strength 4-day</h2>
+            <span class="tag">Active</span>
+          </div>
+          <p class="meta">Oct 1 · 4 days</p>
+          <div class="day"><div><strong>Upper A</strong><span>6 exercises</span></div><button class="btn" type="button">Start</button></div>
+          <div class="day"><div><strong>Lower A</strong><span>5 exercises</span></div><button class="btn" type="button">Start</button></div>
+          <p class="meta" style="padding-bottom: 12px;">Older programs · 2</p>
+        </section>
+        <section class="plate block">
+          <div class="head">
+            <h2>Recent</h2>
+            <span class="link">View all</span>
+          </div>
+          <div class="log"><div><strong>Workout</strong><span>Sep 24 · in progress</span></div></div>
+          <div class="log"><div><strong>Lower B</strong><span>Sep 21 · completed</span></div></div>
+          <div class="log"><div><strong>Upper A</strong><span>Sep 19 · completed</span></div></div>
+        </section>
+      </div>
+      <nav class="tabs"><div class="tab">Home</div><div class="tab">Weight</div><div class="tab on">Workouts</div><div class="tab">Fuel</div><div class="tab">Goals</div></nav>
+    </div>
+  </div>
+  <div class="col">
+    <p class="note">Older programs. Activate one, or remove it.</p>
+    <div class="phone">
+      <div class="screen">
+        <header>
+          <p class="kicker">Workouts</p>
+          <h1>Older programs</h1>
+        </header>
+        <section class="plate block">
+          <div class="old">
+            <div><strong>Fat loss 4-day</strong><span>Sep 18 · 4 days</span></div>
+            <div class="row" style="margin-top:0">
+              <button class="btn" type="button">Use</button>
+              <button class="btn danger" type="button">Remove</button>
+            </div>
+          </div>
+          <div class="old">
+            <div><strong>Hypertrophy 3-day</strong><span>Sep 2 · 3 days</span></div>
+            <div class="row" style="margin-top:0">
+              <button class="btn" type="button">Use</button>
+              <button class="btn danger" type="button">Remove</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

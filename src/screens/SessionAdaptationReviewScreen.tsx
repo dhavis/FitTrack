@@ -43,10 +43,26 @@ export default function SessionAdaptationReviewScreen({ route, navigation }: Pro
     };
   }, [eventId]);
 
+  const workoutStillOpen = async () => {
+    if (!session) return false;
+    const { data } = await supabase
+      .from('workouts')
+      .select('id')
+      .eq('user_id', session.user.id)
+      .is('completed_at', null)
+      .limit(1);
+    return (data ?? []).length > 0;
+  };
+
   const handleApprove = async () => {
     try {
       setActing(true);
       setError(null);
+      if (await workoutStillOpen()) {
+        setError('A workout is still open. End it before starting another.');
+        setActing(false);
+        return;
+      }
       const workoutId = await approveAdaptationEvent(eventId);
       navigation.navigate('ActiveWorkout', { workoutId });
     } catch (err: any) {
@@ -60,6 +76,11 @@ export default function SessionAdaptationReviewScreen({ route, navigation }: Pro
     try {
       setActing(true);
       setError(null);
+      if (await workoutStillOpen()) {
+        setError('A workout is still open. End it before starting another.');
+        setActing(false);
+        return;
+      }
       await rejectAdaptationEvent(eventId);
 
       const activeGym = await resolveActiveGymProfile().catch(() => null);

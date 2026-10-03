@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FitTrack — Color Schemes</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background: #07080A;
+      color: #F5F6F7;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+    }
+    body {
+      padding: 32px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    header {
+      width: 100%;
+      max-width: 1300px;
+      margin-bottom: 28px;
+      text-align: center;
+    }
+    header h1 {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #F5F6F7;
+    }
+    header p {
+      font-size: 14px;
+      color: #9AA1A9;
+      margin-top: 4px;
+    }
+    .columns-container {
+      width: 100%;
+      max-width: 1300px;
+      overflow-x: auto;
+      padding-bottom: 20px;
+    }
+    .columns {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      min-width: min-content;
+      margin: 0 auto;
+    }
+    .columns + .columns {
+      margin-top: 36px;
+    }
+    .column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .scheme-meta {
+      text-align: center;
+      width: 390px;
+    }
+    .scheme-meta h2 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #F5F6F7;
+    }
+    .scheme-meta p {
+      font-size: 13px;
+      color: #9AA1A9;
+      margin-top: 2px;
+    }
+
+    /* Scoped theme variables */
+    .scheme-1 {
+      --bg: #0D0E11;
+      --surface: #17191E;
+      --alt: #20232B;
+      --border: #2E333D;
+      --primary: #E5A93C;
+      --on-primary: #111317;
+      --accent: #4EADB8;
+      --text: #F3F4F6;
+      --muted: #9BA3AF;
+      --faint: #5E6773;
+      --danger: #E05353;
+      --warning: #D9822B;
+    }
+    .scheme-2 {
+      --bg: #0A0C10;
+      --surface: #14181F;
+      --alt: #1C222C;
+      --border: #293240;
+      --primary: #2D7FF9;
+      --on-primary: #FFFFFF;
+      --accent: #34D399;
+      --text: #F1F5F9;
+      --muted: #94A3B8;
+      --faint: #475569;
+      --danger: #EF4444;
+      --warning: #F59E0B;
+    }
+    .scheme-3 {
+      --bg: #0C0A0E;
+      --surface: #18141B;
+      --alt: #231E28;
+      --border: #332A39;
+      --primary: #F43F5E;
+      --on-primary: #FFFFFF;
+      --accent: #38BDF8;
+      --text: #F8FAFC;
+      --muted: #A1A1AA;
+      --faint: #52525B;
+      --danger: #DC2626;
+      --warning: #FBBF24;
+    }
+    .scheme-4 {
+      --bg: #090C10;
+      --surface: #12161E;
+      --alt: #1A202A;
+      --border: #262E3B;
+      --primary: #B4EE24;
+      --on-primary: #090C10;
+      --accent: #9065FA;
+      --text: #F4F6F8;
+      --muted: #939CA8;
+      --faint: #535C68;
+      --danger: #FF4B55;
+      --warning: #FFB020;
+    }
+    .scheme-5 {
+      --bg: #0A0B0F;
+      --surface: #13151D;
+      --alt: #1C1F2B;
+      --border: #282D3D;
+      --primary: #7548FE;
+      --on-primary: #FFFFFF;
+      --accent: #F5B716;
+      --text: #F3F4F6;
+      --muted: #9499A6;
+      --faint: #545967;
+      --danger: #FF4D4D;
+      --warning: #FB923C;
+    }
+    .scheme-6 {
+      --bg: #08090C;
+      --surface: #111319;
+      --alt: #1A1D25;
+      --border: #262B35;
+      --primary: #E2E8F0;
+      --on-primary: #08090C;
+      --accent: #F037A5;
+      --text: #F8FAFC;
+      --muted: #8E95A2;
+      --faint: #4E5562;
+      --danger: #FF4040;
+      --warning: #FFB703;
+    }
+
+    /* Phone frame */
+    .phone {
+      width: 390px;
+      height: 844px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 36px;
+      overflow: hidden;
+      position: relative;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      color: var(--text);
+    }
+    .notch {
+      height: 47px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding: 0 22px 8px;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+      flex-shrink: 0;
+    }
+    .screen {
+      height: 714px;
+      padding: 0 16px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: hidden;
+    }
+    .tabs {
+      height: 83px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      padding: 6px 4px 18px;
+      flex-shrink: 0;
+    }
+    .tabs button {
+      background: none;
+      border: 0;
+      color: var(--faint);
+      font-size: 9px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+    }
+    .tabs button.active {
+      color: var(--primary);
+    }
+    .tabs svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+    }
+
+    /* Typography & layout utilities */
+    .eyebrow {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .eyebrow.hot { color: var(--primary); }
+    .eyebrow.go { color: var(--accent); }
+    h3 {
+      font-size: 18px;
+      font-weight: 800;
+      line-height: 1.15;
+      color: var(--text);
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .card.tight {
+      padding: 8px 10px;
+      border-radius: 8px;
+    }
+    .muted { color: var(--muted); }
+    .faint { color: var(--faint); }
+    .tiny { font-size: 10px; color: var(--faint); }
+    .sm { font-size: 12px; }
+    .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+    /* Action button */
+    .cta {
+      width: 100%;
+      height: 48px;
+      border: 0;
+      border-radius: 999px;
+      background: var(--primary);
+      color: var(--on-primary);
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .chip {
+      background: var(--alt);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 5px 8px;
+      font-size: 11px;
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .chips {
+      display: flex;
+      gap: 6px;
+      overflow: hidden;
+    }
+    .ghost-chip {
+      background: var(--alt);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .bar {
+      height: 6px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .bar > i {
+      display: block;
+      height: 100%;
+      background: var(--accent);
+    }
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .week {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+    .week span {
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      background: var(--alt);
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .week span.done { color: var(--accent); }
+    .week span.now { background: var(--primary); color: var(--on-primary); font-weight: 800; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>FitTrack color schemes</h1>
+    <p>Dark mode. Same Today Board. Dummy data.</p>
+  </header>
+
+  <main class="columns-container">
+    <!-- Row 1: Schemes 1-3 -->
+    <div class="columns">
+      <!-- Scheme 1 -->
+      <section class="column">
+        <div class="scheme-meta">
+          <h2>1. Raw Iron &amp; Forge Amber</h2>
+          <p>Heavy iron and burnished brass.</p>
+        </div>
+        <div class="phone scheme-1" aria-label="Scheme 1: Raw Iron & Forge Amber">
+          <div class="notch"><span>9:41</span><span>FitTrack</span></div>
+          <div class="screen">
+            <div class="row">
+              <div>
+                <div class="eyebrow">Today Board</div>
+                <h3>Wed, Sep 23</h3>
+              </div>
+              <button class="ghost-chip">Main Gym</button>
+            </div>
+            <div class="card tight row">
+              <span class="sm"><span style="color:var(--accent);font-weight:700">Ready</span> 9/10</span>
+              <span class="sm muted">Adaptations: none needed</span>
+            </div>
+            <div class="card">
+              <div class="row">
+                <span class="eyebrow hot">Up next · today</span>
+                <span class="sm muted">Chest &amp; triceps</span>
+              </div>
+              <h3 style="margin:4px 0 2px;font-size:22px">Push A</h3>
+              <div class="sm muted num">4 exercises · 14 working sets · ~50 min</div>
+              <div class="chips" style="margin:10px 0">
+                <span class="chip">Bench 4×6</span>
+                <span class="chip">Incline DB 3×8</span>
+                <span class="chip">Dips 3×10</span>
+                <span class="chip">Tri ext 4×12</span>
+              </div>
+              <button class="cta">Start Push A</button>
+            </div>
+            <div class="split">
+              <div class="card tight">
+                <div class="eyebrow">Fuel</div>
+                <div class="num" style="font-size:16px;font-weight:800;color:var(--accent);margin:2px 0">142 / 180 g P</div>
+                <div class="bar" style="margin:6px 0"><i style="width:79%"></i></div>
+                <div class="sm muted num">1,640 / 2,200 kcal</div>
+              </div>
+              <div class="card tight">
+                <div class="eyebrow">Weight</div>
+                <div class="num" style="font-size:16px;font-weight:800;margin:2px 0">82.4 kg</div>
+                <div class="sm muted num" style="margin-top:10px">7d avg 82.6 · −0.2</div>
+              </div>
+            </div>
+            <div class="card tight">
+              <div class="week">
+                <span class="done">M</span><span class="done">T</span><span class="now">W</span>
+                <span>T</span><span>F</span><span>S</span><span>S</span>
+              </div>
+              <div class="sm" style="margin-top:6px;color:var(--accent);font-weight:600">4-day streak</div>
+            </div>
+            <div>
+              <div class="sm muted">Coach: rest on bench set to 2:30. Protein pace is solid.</div>
+              <div class="tiny" style="margin-top:2px">Non-medical fitness tracker.</div>
+            </div>
+          </div>
+          <nav class="tabs">
+            <button class="active"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4z"/></svg>Dashboard</button>
+            <button><svg viewBox="0 0 24 24"><path d="M4 16c3-6 6-2 8 0s5-6 8-10"/></svg>Weight</button>
+            <button><svg viewBox="0 0 24 24"><path d="M3 10h4l2-2h6l2 2h4v4h-4l-2 2H9l-2-2H3z"/></svg>Workouts</button>
+            <button><svg viewBox="0 0 24 24"><path d="M7 4v16M12 8c4 0 5 3 5 8H12V8z"/></svg>Nutrition</button>
+            <button><svg viewBox="0 0 24 24"><path d="M5 20V5h10l-2 3 2 3H5"/></svg>Goals</button>
+            <button><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 4v2M12 18v2M4 12h2M18 12h2"/></svg>Settings</button>
+          </nav>
+        </div>
+      </section>
+
+      <!-- Scheme 2 -->
+      <section class="column">
+        <div class="scheme-meta">
+          <h2>2. Graphite &amp; Kinetic Cobalt</h2>
+          <p>Graphite floor, cobalt action.</p>
+        </div>
+        <div class="phone scheme-2" aria-label="Scheme 2: Graphite & Kinetic Cobalt">
+          <div class="notch"><span>9:41</span><span>FitTrack</span></div>
+          <div class="screen">
+            <div class="row">
+              <div>
+                <div class="eyebrow">Today Board</div>
+                <h3>Wed, Sep 23</h3>
+              </div>
+              <button class="ghost-chip">Main Gym</button>
+            </div>
+            <div class="card tight row">
+              <span class="sm"><span style="color:var(--accent);font-weight:700">Ready</span> 9/10</span>
+              <span class="sm muted">Adaptations: none needed</span>
+            </div>
+            <div class="card">
+              <div class="row">
+                <span class="eyebrow hot">Up next · today</span>
+                <span class="sm muted">Chest &amp; triceps</span>
+              </div>
+              <h3 style="margin:4px 0 2px;font-size:22px">Push A</h3>
+              <div class="sm muted num">4 exercises · 14 working sets · ~50 min</div>
+              <div class="chips" style="margin:10px 0">
+                <span class="chip">Bench 4×6</span>
+                <span class="chip">Incline DB 3×8</span>
+                <span class="chip">Dips 3×10</span>
+                <span class="chip">Tri ext 4×12</span>
+              </div>
+              <button class="cta">Start Push A</button>
+            </div>
+            <div class="split">
+              <div class="card tight">
+                <div class="eyebrow">Fuel</div>
+                <div class="num" style="font-size:16px;font-weight:800;color:var(--accent);margin:2px 0">142 / 180 g P</div>
+                <div class="bar" style="margin:6px 0"><i style="width:79%"></i></div>
+                <div class="sm muted num">1,640 / 2,200 kcal</div>
+              </div>
+              <div class="card tight">
+                <div class="eyebrow">Weight</div>
+                <div class="num" style="font-size:16px;font-weight:800;margin:2px 0">82.4 kg</div>
+                <div class="sm muted num" style="margin-top:10px">7d avg 82.6 · −0.2</div>
+              </div>
+            </div>
+            <div class="card tight">
+              <div class="week">
+                <span class="done">M</span><span class="done">T</span><span class="now">W</span>
+                <span>T</span><span>F</span><span>S</span><span>S</span>
+              </div>
+              <div class="sm" style="margin-top:6px;color:var(--accent);font-weight:600">4-day streak</div>
+            </div>
+            <div>
+              <div class="sm muted">Coach: rest on bench set to 2:30. Protein pace is solid.</div>
+              <div class="tiny" style="margin-top:2px">Non-medical fitness tracker.</div>
+            </div>
+          </div>
+          <nav class="tabs">
+            <button class="active"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4z"/></svg>Dashboard</button>
+            <button><svg viewBox="0 0 24 24"><path d="M4 16c3-6 6-2 8 0s5-6 8-10"/></svg>Weight</button>
+            <button><svg viewBox="0 0 24 24"><path d="M3 10h4l2-2h6l2 2h4v4h-4l-2 2H9l-2-2H3z"/></svg>Workouts</button>
+            <button><svg viewBox="0 0 24 24"><path d="M7 4v16M12 8c4 0 5 3 5 8H12V8z"/></svg>Nutrition</button>
+            <button><svg viewBox="0 0 24 24"><path d="M5 20V5h10l-2 3 2 3H5"/></svg>Goals</button>
+            <button><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 4v2M12 18v2M4 12h2M18 12h2"/></svg>Settings</button>
+          </nav>
+        </div>
+      </section>
+
+      <!-- Scheme 3 -->
+      <section class="column">
+        <div class="scheme-meta">
+          <h2>3. Basalt &amp; Ignite Coral</h2>
+          <p>Volcanic stone, coral strike.</p>
+        </div>
+        <div class="phone scheme-3" aria-label="Scheme 3: Basalt & Ignite Coral">
+          <div class="notch"><span>9:41</span><span>FitTrack</span></div>
+          <div class="screen">
+            <div class="row">
+              <div>
+                <div class="eyebrow">Today Board</div>
+                <h3>Wed, Sep 23</h3>
+              </div>
+              <button class="ghost-chip">Main Gym</button>
+            </div>
+            <div class="card tight row">
+              <span class="sm"><span style="color:var(--accent);font-weight:700">Ready</span> 9/10</span>
+              <span class="sm muted">Adaptations: none needed</span>
+            </div>
+            <div class="card">
+              <div class="row">
+                <span class="eyebrow hot">Up next · today</span>
+                <span class="sm muted">Chest &amp; triceps</span>
+              </div>
+              <h3 style="margin:4px 0 2px;font-size:22px">Push A</h3>
+              <div class="sm muted num">4 exercises · 14 working sets · ~50 min</div>
+              <div class="chips" style="margin:10px 0">
+                <span class="chip">Bench 4×6</span>
+                <span class="chip">Incline DB 3×8</span>
+                <span class="chip">Dips 3×10</span>
+                <span class="chip">Tri ext 4×12</span>
+              </div>
+              <button class="cta">Start Push A</button>
+            </div>
+            <div class="split">
+              <div class="card tight">
+                <div class="eyebrow">Fuel</div>
+                <div class="num" style="font-size:16px;font-weight:800;color:var(--accent);margin:2px 0">142 / 180 g P</div>
+                <div class="bar" style="margin:6px 0"><i style="width:79%"></i></div>
+                <div class="sm muted num">1,640 / 2,200 kcal</div>
+              </div>
+              <div class="card tight">
+                <div class="eyebrow">Weight</div>
+                <div class="num" style="font-size:16px;font-weight:800;margin:2px 0">82.4 kg</div>
+                <div class="sm muted num" style="margin-top:10px">7d avg 82.6 · −0.2</div>
+              </div>
+            </div>
+            <div class="card tight">
+              <div class="week">
+                <span class="done">M</span><span class="done">T</span><span class="now">W</span>
+                <span>T</span><span>F</span><span>S</span><span>S</span>
+              </div>
+              <div class="sm" style="margin-top:6px;color:var(--accent);font-weight:600">4-day streak</div>
+            </div>
+            <div>
+              <div class="sm muted">Coach: rest on bench set to 2:30. Protein pace is solid.</div>
+              <div class="tiny" style="margin-top:2px">Non-medical fitness tracker.</div>
+            </div>
+          </div>
+          <nav class="tabs">
+            <button class="active"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4z"/></svg>Dashboard</button>
+            <button><svg viewBox="0 0 24 24"><path d="M4 16c3-6 6-2 8 0s5-6 8-10"/></svg>Weight</button>
+            <button><svg viewBox="0 0 24 24"><path d="M3 10h4l2-2h6l2 2h4v4h-4l-2 2H9l-2-2H3z"/></svg>Workouts</button>
+            <button><svg viewBox="0 0 24 24"><path d="M7 4v16M12 8c4 0 5 3 5 8H12V8z"/></svg>Nutrition</button>
+            <button><svg viewBox="0 0 24 24"><path d="M5 20V5h10l-2 3 2 3H5"/></svg>Goals</button>
+            <button><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 4v2M12 18v2M4 12h2M18 12h2"/></svg>Settings</button>
+          </nav>
+        </div>
+      </section>
+    </div>
+
+    <!-- Row 2: Schemes 4-6 -->
+    <div class="columns" style="margin-top: 36px;">
+      <!-- Scheme 4 -->
+      <section class="column">
+        <div class="scheme-meta">
+          <h2>4. Obsidian &amp; Acid Chartreuse</h2>
+          <p>High-visibility gear on a black floor.</p>
+        </div>
+        <div class="phone scheme-4" aria-label="Scheme 4: Obsidian & Acid Chartreuse">
+          <div class="notch"><span>9:41</span><span>FitTrack</span></div>
+          <div class="screen">
+            <div class="row">
+              <div>
+                <div class="eyebrow">Today Board</div>
+                <h3>Wed, Sep 23</h3>
+              </div>
+              <button class="ghost-chip">Main Gym</button>
+            </div>
+            <div class="card tight row">
+              <span class="sm"><span style="color:var(--accent);font-weight:700">Ready</span> 9/10</span>
+              <span class="sm muted">Adaptations: none needed</span>
+            </div>
+            <div class="card">
+              <div class="row">
+                <span class="eyebrow hot">Up next · today</span>
+                <span class="sm muted">Chest &amp; triceps</span>
+              </div>
+              <h3 style="margin:4px 0 2px;font-size:22px">Push A</h3>
+              <div class="sm muted num">4 exercises · 14 working sets · ~50 min</div>
+              <div class="chips" style="margin:10px 0">
+                <span class="chip">Bench 4×6</span>
+                <span class="chip">Incline DB 3×8</span>
+                <span class="chip">Dips 3×10</span>
+                <span class="chip">Tri ext 4×12</span>
+              </div>
+              <button class="cta">Start Push A</button>
+            </div>
+            <div class="split">
+              <div class="card tight">
+                <div class="eyebrow">Fuel</div>
+                <div class="num" style="font-size:16px;font-weight:800;color:var(--accent);margin:2px 0">142 / 180 g P</div>
+                <div class="bar" style="margin:6px 0"><i style="width:79%"></i></div>
+                <div class="sm muted num">1,640 / 2,200 kcal</div>
+              </div>
+              <div class="card tight">
+                <div class="eyebrow">Weight</div>
+                <div class="num" style="font-size:16px;font-weight:800;margin:2px 0">82.4 kg</div>
+                <div class="sm muted num" style="margin-top:10px">7d avg 82.6 · −0.2</div>
+              </div>
+            </div>
+            <div class="card tight">
+              <div class="week">
+                <span class="done">M</span><span class="done">T</span><span class="now">W</span>
+                <span>T</span><span>F</span><span>S</span><span>S</span>
+              </div>
+              <div class="sm" style="margin-top:6px;color:var(--accent);font-weight:600">4-day streak</div>
+            </div>
+            <div>
+              <div class="sm muted">Coach: rest on bench set to 2:30. Protein pace is solid.</div>
+              <div class="tiny" style="margin-top:2px">Non-medical fitness tracker.</div>
+            </div>
+          </div>
+          <nav class="tabs">
+            <button class="active"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4z"/></svg>Dashboard</button>
+            <button><svg viewBox="0 0 24 24"><path d="M4 16c3-6 6-2 8 0s5-6 8-10"/></svg>Weight</button>
+            <button><svg viewBox="0 0 24 24"><path d="M3 10h4l2-2h6l2 2h4v4h-4l-2 2H9l-2-2H3z"/></svg>Workouts</button>
+            <button><svg viewBox="0 0 24 24"><path d="M7 4v16M12 8c4 0 5 3 5 8H12V8z"/></svg>Nutrition</button>
+            <button><svg viewBox="0 0 24 24"><path d="M5 20V5h10l-2 3 2 3H5"/></svg>Goals</button>
+            <button><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 4v2M12 18v2M4 12h2M18 12h2"/></svg>Settings</button>
+          </nav>
+        </div>
+      </section>
+
+      <!-- Scheme 5 -->
+      <section class="column">
+        <div class="scheme-meta">
+          <h2>5. Smoked Iron &amp; Tactical Violet</h2>
+          <p>A late-night lifting room.</p>
+        </div>
+        <div class="phone scheme-5" aria-label="Scheme 5: Smoked Iron & Tactical Violet">
+          <div class="notch"><span>9:41</span><span>FitTrack</span></div>
+          <div class="screen">
+            <div class="row">
+              <div>
+                <div class="eyebrow">Today Board</div>
+                <h3>Wed, Sep 23</h3>
+              </div>
+              <button class="ghost-chip">Main Gym</button>
+            </div>
+            <div class="card tight row">
+              <span class="sm"><span style="color:var(--accent);font-weight:700">Ready</span> 9/10</span>
+              <span class="sm muted">Adaptations: none needed</span>
+            </div>
+            <div class="card">
+              <div class="row">
+                <span class="eyebrow hot">Up next · today</span>
+                <span class="sm muted">Chest &amp; triceps</span>
+              </div>
+              <h3 style="margin:4px 0 2px;font-size:22px">Push A</h3>
+              <div class="sm muted num">4 exercises · 14 working sets · ~50 min</div>
+              <div class="chips" style="margin:10px 0">
+                <span class="chip">Bench 4×6</span>
+                <span class="chip">Incline DB 3×8</span>
+                <span class="chip">Dips 3×10</span>
+                <span class="chip">Tri ext 4×12</span>
+              </div>
+              <button class="cta">Start Push A</button>
+            </div>
+            <div class="split">
+              <div class="card tight">
+                <div class="eyebrow">Fuel</div>
+                <div class="num" style="font-size:16px;font-weight:800;color:var(--accent);margin:2px 0">142 / 180 g P</div>
+                <div class="bar" style="margin:6px 0"><i style="width:79%"></i></div>
+                <div class="sm muted num">1,640 / 2,200 kcal</div>
+              </div>
+              <div class="card tight">
+                <div class="eyebrow">Weight</div>
+                <div class="num" style="font-size:16px;font-weight:800;margin:2px 0">82.4 kg</div>
+                <div class="sm muted num" style="margin-top:10px">7d avg 82.6 · −0.2</div>
+              </div>
+            </div>
+            <div class="card tight">
+              <div class="week">
+                <span class="done">M</span><span class="done">T</span><span class="now">W</span>
+                <span>T</span><span>F</span><span>S</span><span>S</span>
+              </div>
+              <div class="sm" style="margin-top:6px;color:var(--accent);font-weight:600">4-day streak</div>
+            </div>
+            <div>
+              <div class="sm muted">Coach: rest on bench set to 2:30. Protein pace is solid.</div>
+              <div class="tiny" style="margin-top:2px">Non-medical fitness tracker.</div>
+            </div>
+          </div>
+          <nav class="tabs">
+            <button class="active"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4z"/></svg>Dashboard</button>
+            <button><svg viewBox="0 0 24 24"><path d="M4 16c3-6 6-2 8 0s5-6 8-10"/></svg>Weight</button>
+            <button><svg viewBox="0 0 24 24"><path d="M3 10h4l2-2h6l2 2h4v4h-4l-2 2H9l-2-2H3z"/></svg>Workouts</button>
+            <button><svg viewBox="0 0 24 24"><path d="M7 4v16M12 8c4 0 5 3 5 8H12V8z"/></svg>Nutrition</button>
+            <button><svg viewBox="0 0 24 24"><path d="M5 20V5h10l-2 3 2 3H5"/></svg>Goals</button>
+            <button><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 4v2M12 18v2M4 12h2M18 12h2"/></svg>Settings</button>
+          </nav>
+        </div>
+      </section>
+
+      <!-- Scheme 6 -->
+      <section class="column">
+        <div class="scheme-meta">
+          <h2>6. Monolith &amp; Glacial Platinum</h2>
+          <p>Bare steel and a single laser mark.</p>
+        </div>
+        <div class="phone scheme-6" aria-label="Scheme 6: Monolith & Glacial Platinum">
+          <div class="notch"><span>9:41</span><span>FitTrack</span></div>
+          <div class="screen">
+            <div class="row">
+              <div>
+                <div class="eyebrow">Today Board</div>
+                <h3>Wed, Sep 23</h3>
+              </div>
+              <button class="ghost-chip">Main Gym</button>
+            </div>
+            <div class="card tight row">
+              <span class="sm"><span style="color:var(--accent);font-weight:700">Ready</span> 9/10</span>
+              <span class="sm muted">Adaptations: none needed</span>
+            </div>
+            <div class="card">
+              <div class="row">
+                <span class="eyebrow hot">Up next · today</span>
+                <span class="sm muted">Chest &amp; triceps</span>
+              </div>
+              <h3 style="margin:4px 0 2px;font-size:22px">Push A</h3>
+              <div class="sm muted num">4 exercises · 14 working sets · ~50 min</div>
+              <div class="chips" style="margin:10px 0">
+                <span class="chip">Bench 4×6</span>
+                <span class="chip">Incline DB 3×8</span>
+                <span class="chip">Dips 3×10</span>
+                <span class="chip">Tri ext 4×12</span>
+              </div>
+              <button class="cta">Start Push A</button>
+            </div>
+            <div class="split">
+              <div class="card tight">
+                <div class="eyebrow">Fuel</div>
+                <div class="num" style="font-size:16px;font-weight:800;color:var(--accent);margin:2px 0">142 / 180 g P</div>
+                <div class="bar" style="margin:6px 0"><i style="width:79%"></i></div>
+                <div class="sm muted num">1,640 / 2,200 kcal</div>
+              </div>
+              <div class="card tight">
+                <div class="eyebrow">Weight</div>
+                <div class="num" style="font-size:16px;font-weight:800;margin:2px 0">82.4 kg</div>
+                <div class="sm muted num" style="margin-top:10px">7d avg 82.6 · −0.2</div>
+              </div>
+            </div>
+            <div class="card tight">
+              <div class="week">
+                <span class="done">M</span><span class="done">T</span><span class="now">W</span>
+                <span>T</span><span>F</span><span>S</span><span>S</span>
+              </div>
+              <div class="sm" style="margin-top:6px;color:var(--accent);font-weight:600">4-day streak</div>
+            </div>
+            <div>
+              <div class="sm muted">Coach: rest on bench set to 2:30. Protein pace is solid.</div>
+              <div class="tiny" style="margin-top:2px">Non-medical fitness tracker.</div>
+            </div>
+          </div>
+          <nav class="tabs">
+            <button class="active"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4z"/></svg>Dashboard</button>
+            <button><svg viewBox="0 0 24 24"><path d="M4 16c3-6 6-2 8 0s5-6 8-10"/></svg>Weight</button>
+            <button><svg viewBox="0 0 24 24"><path d="M3 10h4l2-2h6l2 2h4v4h-4l-2 2H9l-2-2H3z"/></svg>Workouts</button>
+            <button><svg viewBox="0 0 24 24"><path d="M7 4v16M12 8c4 0 5 3 5 8H12V8z"/></svg>Nutrition</button>
+            <button><svg viewBox="0 0 24 24"><path d="M5 20V5h10l-2 3 2 3H5"/></svg>Goals</button>
+            <button><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 4v2M12 18v2M4 12h2M18 12h2"/></svg>Settings</button>
+          </nav>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

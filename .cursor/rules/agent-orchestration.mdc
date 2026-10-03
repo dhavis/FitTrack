@@ -23,9 +23,9 @@ Then **launch** the first required specialist(s) with Task in that same turn. Do
 
 Task parameters:
 
-- `subagent_type`: `product-manager` | `ui-ux-designer` | `software-architect` | `dba` | `ai-expert` | `qa-engineer` | `devops` | `executor` | `planner`
-- `model`: `gpt-5.6-sol-medium` (PM, UX, architect, DBA, AI expert, planner) or `gemini-3.7-flash-high` (executor, QA, DevOps)
-- Never `inherit`. Never Grok / Composer / Claude unless the user named that listed model
+- `subagent_type`: `product-manager` | `ui-ux-designer` | `usage-rights` | `software-architect` | `dba` | `ai-expert` | `qa-engineer` | `red-team` | `devops` | `executor` | `planner`
+- `model`: `claude-sonnet-5-5-high` (PM, architect, DBA, AI expert, usage-rights, red-team, planner) or `gemini-3.8-flash-high` (UI/UX, executor, QA, DevOps)
+- Never `inherit`. Never Grok or Composer unless the user named that model
 - `run_in_background: false` unless two specialists are independent (then launch both in one turn)
 - Prompt must include the user request, FitTrack context, and what that agent should return
 
@@ -38,23 +38,27 @@ Handoff table: `.cursor/agents/HANDOFF.md`.
 | Request | First |
 | --- | --- |
 | What to build, roadmap, prioritize, expand features | `product-manager` |
-| Layout, copy, flows, theme | `ui-ux-designer` |
+| Layout, copy, flows, theme, visual polish | `ui-ux-designer` |
+| Copyright, icon license, can we use this asset | `usage-rights` |
 | Architecture, auth, where code lives | `software-architect` |
 | Schema, RLS, SQL, migrations | `dba` |
 | Coach, LLM, prompts, generated copy | `ai-expert` |
 | Implement, fix, refactor | `executor` (plan first via architect/PM if the change is not already specified) |
 | Test, QA, smoke, devices | `qa-engineer` |
 | Expo, Metro, `.env`, Supabase CLI, GitHub, secrets | `devops` |
-| `sync-to-github` | follow that skill (`executor` if you need a subagent) |
+| `sync-to-github`, ship, release, publish | follow `sync-to-github`; it launches `red-team` and does not push until that report is back |
 | Question, summary, or already-answered | main chat only |
 
 Typical build pipeline (skip steps that do not apply):
 
-`product-manager` → `ui-ux-designer` and/or `software-architect` → `dba` and/or `ai-expert` → `executor` → `qa-engineer`
+`product-manager` → `ui-ux-designer` and/or `software-architect` → `usage-rights` (icons, images, fonts, external copy, named programs) → `dba` and/or `ai-expert` → `executor` → `red-team` → `qa-engineer`
+
+Do not start a release, GitHub push, or deploy until `red-team` has reported on that diff. A Critical finding blocks the release.
 
 ## Do not
 
-- Launch all seven on every message
+- Launch every specialist on every message
 - Re-open product debates inside `executor`
 - Print secrets
 - Skip the **Agents:** line
+- Describe a look, layout, or theme without a visual in `mocks/` (see `design-visuals.mdc`)

@@ -1,0 +1,13 @@
+---
+description: Every design suggestion must include a visual mock
+alwaysApply: true
+---
+
+# Design suggestions need a visual
+
+A look, layout, theme, or screen treatment is not done until the user can see it. Do not stop at a written description.
+
+- In the same turn, save an HTML mock under `mocks/` and link it. If the mock server is up, use `http://127.0.0.1:4173/<file>.html`.
+- Show the screen the suggestion is about, at phone width.
+- Use original CSS. Do not paste another product's shaders, images, or unlicensed fonts. Space Grotesk is already licensed in this app.
+- A bugfix or a wording tweak with no new layout does not need a mock.

@@ -12,7 +12,7 @@ import {
   ViewProps,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, radii, spacing, typography } from '../theme/theme';
+import { colors, fonts, radii, spacing, typography } from '../theme/theme';
 import { checkSupabaseReachable, isSupabaseConfigured } from '../lib/supabase';
 
 export function ScreenContainer({ children, style, ...rest }: ViewProps) {
@@ -60,7 +60,7 @@ export function Button({
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? colors.background : colors.text} />
+        <ActivityIndicator color={variant === 'primary' ? colors.primaryForeground : colors.text} />
       ) : (
         <Text style={[styles.buttonText, variant === 'primary' && styles.buttonTextPrimary]}>
           {title}
@@ -127,7 +127,7 @@ export function ServerUnreachableNote() {
 
 const variantStyles = StyleSheet.create({
   primary: { backgroundColor: colors.primary, borderColor: colors.primary },
-  secondary: { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
+  secondary: { backgroundColor: 'transparent', borderColor: colors.border },
   ghost: { backgroundColor: 'transparent', borderColor: 'transparent' },
   danger: { backgroundColor: colors.danger, borderColor: colors.danger },
 });
@@ -137,13 +137,14 @@ const styles = StyleSheet.create({
   screen: { flex: 1, paddingHorizontal: spacing.md },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radii.lg,
+    borderRadius: radii.sm,
     borderWidth: 1,
     borderColor: colors.border,
+    borderTopColor: colors.highlight,
     padding: spacing.md,
   },
   button: {
-    borderRadius: radii.md,
+    borderRadius: radii.sm,
     borderWidth: 1,
     paddingVertical: 14,
     alignItems: 'center',
@@ -151,19 +152,20 @@ const styles = StyleSheet.create({
   },
   buttonPressed: { opacity: 0.8 },
   buttonDisabled: { opacity: 0.5 },
-  buttonText: { ...typography.body, fontWeight: '700' },
-  buttonTextPrimary: { color: colors.background },
+  buttonText: { ...typography.button, textTransform: 'uppercase' },
+  buttonTextPrimary: { color: colors.primaryForeground },
   input: {
     backgroundColor: colors.surfaceAlt,
-    borderRadius: radii.md,
+    borderRadius: radii.sm,
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: spacing.md,
     paddingVertical: 12,
     color: colors.text,
     fontSize: 15,
+    fontFamily: fonts.regular,
   },
-  label: { ...typography.caption, marginBottom: spacing.xs, textTransform: 'uppercase' },
+  label: { ...typography.label, marginBottom: spacing.xs, textTransform: 'uppercase' },
   sectionTitle: { ...typography.h3, marginBottom: spacing.sm },
   emptyState: { padding: spacing.lg, alignItems: 'center' },
   emptyStateText: { ...typography.bodyMuted, textAlign: 'center' },

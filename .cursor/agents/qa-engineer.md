@@ -4,14 +4,14 @@ description: >-
   FitTrack QA engineer. Use proactively to smoke-test, regression-test, or
   validate a feature in the running app (auth, dashboard, weight, workouts,
   nutrition, goals, settings, devices).
-model: gemini-3.7-flash-high
+model: gemini-3.8-flash-high
 readonly: false
 is_background: false
 ---
 
 You are the **QA engineer** for FitTrack. You find bugs. You do not change product code unless the user asks to fix findings.
 
-Use model **Gemini 3.7 Flash** (`gemini-3.7-flash-high`).
+Use model **Gemini 3.8** (`gemini-3.8-flash-high`).
 
 ## How to run
 

@@ -56,7 +56,7 @@ export interface GymProfileSnapshot {
 }
 
 export type BlockType = 'straight' | 'superset' | 'powerset';
-export type SetType = 'regular' | 'drop';
+export type SetType = 'regular' | 'drop' | 'warmup';
 export type LiveWorkoutPhase = 'regular' | 'drop' | 'rest' | 'complete';
 
 export interface Profile {
@@ -269,6 +269,16 @@ export interface FoodLog {
   fat_g: number;
   source: string | null;
   external_id: string | null;
+  custom_meal_id?: string | null;
+  created_at: string;
+}
+
+export interface CustomMeal {
+  id: string;
+  user_id: string;
+  meal_date: string;
+  name: string;
+  creation_order?: number;
   created_at: string;
 }
 
@@ -390,3 +400,19 @@ export interface AdaptationEvent {
   created_at: string;
   decided_at: string | null;
 }
+
+export interface WorkoutHistorySummary {
+  id: string;
+  user_id: string;
+  routine_id: string | null;
+  name: string;
+  started_at: string;
+  completed_at: string | null;
+  notes: string | null;
+  routine_name?: string | null;
+  exercise_count: number;
+  completed_set_count: number;
+  top_weight_kg: number;
+  duration_minutes: number | null;
+}
+

@@ -1,12 +1,12 @@
 ---
 name: sync-to-github
 description: Reviews FitTrack code changes, then commits and pushes to GitHub. Use when the user says sync-to-github, sync to GitHub, push to GitHub, ship to GitHub, or asks to code-review and push.
-model: gemini-3.7-flash-high
+model: gemini-3.8-flash-high
 ---
 
 # Sync to GitHub
 
-Model: `gemini-3.7-flash-high` (execution). Pass this slug if you launch a Task subagent.
+Model: `gemini-3.8-flash-high` (execution). Pass this slug if you launch a Task subagent.
 
 Review the current FitTrack changes, then commit and push to GitHub. Invoking this skill **is** permission to commit and push. Do not wait for a second "please commit" or "please push".
 
@@ -19,6 +19,7 @@ Copy and track:
 ```
 Sync:
 - [ ] Inspect git state
+- [ ] Red team (required)
 - [ ] Code review
 - [ ] Gate on critical findings
 - [ ] Commit (if needed)
@@ -41,9 +42,15 @@ git branch -vv
 
 If there is nothing to commit and the branch is already pushed, stop. Tell the user the repo is already in sync.
 
-### 2. Code review
+### 2. Red team, then code review
 
-Launch **both** review subagents in the same turn, `run_in_background: false`:
+Launch `red-team` before any commit or push. `run_in_background: false`. `model`: `claude-sonnet-5-5-high`. `subagent_type`: `red-team`.
+
+Prompt: the repo path, `Diff: uncommitted changes` (or `Diff: branch changes` when the branch is ahead and the tree is clean), and this instruction: review that diff against `.cursor/agents/red-team.md`. Return the verdict table. Do not edit files.
+
+Wait for the report. If the launch fails or returns no verdict, **stop**. Do not commit. Do not push. Do not treat a missing report as a pass.
+
+In the same turn, also launch both review subagents, `run_in_background: false`:
 
 - `subagent_type: "bugbot"`, `description: "Bugbot"`, prompt:
 
@@ -61,18 +68,20 @@ Launch **both** review subagents in the same turn, `run_in_background: false`:
 
 If there are no uncommitted changes but the branch is ahead of origin, use `Diff: branch changes` instead.
 
-Also read [STANDARDS.md](STANDARDS.md) and apply those FitTrack gates yourself (auth deadlock, secrets in Expo env, RLS, units). Merge your gates with subagent findings.
+Also read [STANDARDS.md](STANDARDS.md) and apply those FitTrack gates yourself (auth deadlock, secrets in Expo env, RLS, units). Merge your gates with the red-team report and the other subagent findings.
 
-If a subagent fails because of a bad prompt, retry once. If it still fails, continue with an inline review using STANDARDS.md — do not block the sync on a subagent outage unless you already found a critical issue.
+If Bugbot or Security Review fails because of a bad prompt, retry once. If it still fails, continue with an inline review using STANDARDS.md. A missing **red-team** report still blocks the sync.
 
 ### 3. Gate on critical findings
 
 Treat as **critical** (must not push):
 
+- Red team verdict **Block release**, or any Critical row in that report
+- No red-team report
 - Auth deadlock (`onAuthStateChange` calling other Supabase APIs)
 - Secrets in the client (`.env`, `EXPO_PUBLIC_*` API keys for OpenAI, service-role keys)
 - Auth/RLS bypass or user A reading user B
-- Data-loss or corrupt writes (wrong unit conversion, wiping profile columns)
+- Data-loss or corrupt writes (wrong unit conversion, wiping profile columns, warm-ups counted as working weight, a live session rewriting the saved routine)
 - Commit would include `.env`, keys, or `supabase/.temp/`
 
 If any critical finding exists:
@@ -156,4 +165,4 @@ Lead with the outcome (pushed / blocked / already in sync). Then the review, the
 - Pushed: `<n>` commit(s) to `origin/<branch>`
 ```
 
-If Bugbot/Security Review returned a table, merge into one table, highest severity first. If both found nothing and STANDARDS.md is clean, write **Review: no blocking issues**.
+If Bugbot, Security Review, or red team returned a table, merge into one table, highest severity first. If red team is **Clear** and the other reviews found nothing and STANDARDS.md is clean, write **Review: no blocking issues**.

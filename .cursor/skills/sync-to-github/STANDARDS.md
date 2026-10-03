@@ -4,6 +4,7 @@ Apply these on every `sync-to-github` run. They are easy to miss in a generic re
 
 ## Must not ship
 
+- **Red team:** do not push, publish, or deploy until `red-team` has reported on this diff. A missing report is a block. Critical findings in that report are a block.
 - **Auth lock:** `onAuthStateChange` may only `setSession` (and local flags like password recovery). Profile loads, `resetPasswordForEmail`, and other Supabase calls belong in a separate `useEffect` or user handler.
 - **Secrets:** no service-role key, OpenAI key, or DB password in Expo/`EXPO_PUBLIC_*`/client source. `.env` is never committed; `.env.example` has empty placeholders only.
 - **RLS:** new tables that store user data must enable RLS and owner-only policies. Do not weaken existing policies.

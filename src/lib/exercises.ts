@@ -12,6 +12,25 @@ const LOCAL_HOWTO: Record<string, ImageSourcePropType> = {
   'row.png': require('../../assets/howto/row.png'),
 };
 
+export const EXERCISE_EQUIPMENT_OPTIONS = [
+  'All',
+  'Barbell',
+  'Dumbbell',
+  'Kettlebell',
+  'Cable',
+  'Machine',
+  'Bodyweight',
+  'Band',
+  'Plate',
+  'Other',
+] as const;
+
+export type ExerciseEquipmentOption = (typeof EXERCISE_EQUIPMENT_OPTIONS)[number];
+
+export function isBodyweightEquipment(equipment: string | null | undefined): boolean {
+  return (equipment ?? '').trim().toLowerCase() === 'bodyweight';
+}
+
 export function resolveHowtoImageSource(path: string | null | undefined): ImageSourcePropType | null {
   if (!path) return null;
   const key = path.replace(/^\//, '');

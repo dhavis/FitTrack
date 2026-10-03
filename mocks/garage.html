@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FitTrack — garage</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Big+Shoulders+Text:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #1A1814;
+      --surface: #24211C;
+      --alt: #2E2A24;
+      --border: #4A4338;
+      --primary: #E2A122;
+      --on-primary: #1A1408;
+      --accent: #C4492A;
+      --text: #F3EDE2;
+      --muted: #B7AA98;
+      --faint: #7A7064;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      background: #14120F;
+      color: #F3EDE2;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px 48px;
+      font-family: 'Big Shoulders Text', ui-sans-serif, system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    header h1 {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #F3EDE2;
+    }
+
+    header p {
+      font-size: 14px;
+      color: #B7AA98;
+      margin-top: 4px;
+    }
+
+    .phone {
+      width: 390px;
+      height: 844px;
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 36px;
+      overflow: hidden;
+      position: relative;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      color: var(--text);
+    }
+
+    .notch {
+      height: 47px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding: 0 24px 8px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+      flex-shrink: 0;
+    }
+
+    .screen {
+      height: 714px;
+      padding: 4px 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .tabs {
+      height: 83px;
+      background: var(--surface);
+      border-top: 2px solid var(--border);
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      padding: 8px 4px 20px;
+      flex-shrink: 0;
+    }
+
+    .tabs button {
+      background: none;
+      border: 0;
+      color: var(--faint);
+      font-size: 10px;
+      font-family: 'Big Shoulders Text', sans-serif;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+    }
+
+    .tabs button.active {
+      color: var(--primary);
+    }
+
+    .tabs svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+    }
+
+    /* Stencil / Workshop typography */
+    .eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      text-transform: uppercase;
+      font-family: 'Big Shoulders Text', sans-serif;
+    }
+
+    .eyebrow.hot {
+      color: var(--primary);
+    }
+
+    .eyebrow.accent-label {
+      color: var(--accent);
+    }
+
+    h2.screen-title {
+      font-family: 'Big Shoulders Display', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      line-height: 1.1;
+      color: var(--text);
+    }
+
+    h3.workout-title {
+      font-family: 'Big Shoulders Display', sans-serif;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      line-height: 1.1;
+      color: var(--text);
+      margin: 3px 0 2px;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    /* Squared steel plate cards */
+    .card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 2px;
+      padding: 11px 12px;
+    }
+
+    .card.tight {
+      padding: 7px 10px;
+      border-radius: 2px;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .faint {
+      color: var(--faint);
+    }
+
+    .tiny {
+      font-size: 11px;
+      color: var(--faint);
+      font-weight: 500;
+    }
+
+    .sm {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .num {
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum";
+    }
+
+    /* Action button */
+    .cta {
+      width: 100%;
+      height: 46px;
+      border: 0;
+      border-radius: 2px;
+      background: var(--primary);
+      color: var(--on-primary);
+      font-family: 'Big Shoulders Text', sans-serif;
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .chip {
+      background: var(--alt);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 4px 7px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      font-family: 'Big Shoulders Text', sans-serif;
+      letter-spacing: 0.03em;
+    }
+
+    .chips {
+      display: flex;
+      gap: 5px;
+      overflow: hidden;
+    }
+
+    .ghost-chip {
+      background: var(--alt);
+      border: 2px solid var(--border);
+      color: var(--text);
+      border-radius: 2px;
+      padding: 4px 9px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'Big Shoulders Text', sans-serif;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .bar {
+      height: 6px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .bar > i {
+      display: block;
+      height: 100%;
+      background: var(--accent);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .stat-heading {
+      font-family: 'Big Shoulders Text', sans-serif;
+      font-weight: 700;
+    }
+
+    .stat-display-val {
+      font-family: 'Big Shoulders Display', sans-serif;
+      font-weight: 800;
+      font-size: 21px;
+      line-height: 1.1;
+      letter-spacing: 0.02em;
+    }
+
+    .stat-text-val {
+      font-family: 'Big Shoulders Text', sans-serif;
+      font-weight: 700;
+      font-size: 17px;
+      line-height: 1.1;
+      letter-spacing: 0.02em;
+    }
+
+    .week {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+
+    .week span {
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 2px;
+      background: var(--alt);
+      border: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 700;
+      font-family: 'Big Shoulders Text', sans-serif;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+
+    .week span.done {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .week span.now {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: var(--on-primary);
+      font-weight: 800;
+    }
+
+    .coach-text {
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 500;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>FitTrack — garage</h1>
+    <p>Rugged workshop. Same Today Board.</p>
+  </header>
+
+  <main>
+    <div class="phone" aria-label="FitTrack Garage Theme Mock">
+      <div class="notch">
+        <span>9:41</span>
+        <span>FitTrack</span>
+      </div>
+
+      <div class="screen">
+        <!-- Top Board Header -->
+        <div class="row">
+          <div>
+            <div class="eyebrow">GARAGE</div>
+            <h2 class="screen-title">Wed, Sep 23</h2>
+          </div>
+          <button class="ghost-chip">Main Gym</button>
+        </div>
+
+        <!-- Readiness Card -->
+        <div class="card tight row">
+          <span class="sm num"><span style="color:var(--accent);font-weight:700">Ready</span> 9/10</span>
+          <span class="sm muted">Adaptations: none needed</span>
+        </div>
+
+        <!-- Up Next Card -->
+        <div class="card">
+          <div class="row">
+            <span class="eyebrow hot">UP NEXT · TODAY</span>
+            <span class="sm muted">Chest &amp; triceps</span>
+          </div>
+          <h3 class="workout-title">Push A</h3>
+          <div class="sm muted num" style="font-weight:500">4 exercises · 14 working sets · ~50 min</div>
+          <div class="chips" style="margin:9px 0">
+            <span class="chip">Bench 4×6</span>
+            <span class="chip">Incline DB 3×8</span>
+            <span class="chip">Dips 3×10</span>
+            <span class="chip">Tri ext 4×12</span>
+          </div>
+          <button class="cta">START PUSH A</button>
+        </div>
+
+        <!-- Split Grid: Fuel & Weight -->
+        <div class="split">
+          <div class="card tight">
+            <div class="eyebrow stat-heading">FUEL</div>
+            <div class="num stat-text-val" style="color:var(--accent);margin:3px 0 2px">142 / 180 g P</div>
+            <div class="bar" style="margin:6px 0"><i style="width:79%"></i></div>
+            <div class="sm muted num">1,640 / 2,200 kcal</div>
+          </div>
+          <div class="card tight">
+            <div class="eyebrow stat-heading">WEIGHT</div>
+            <div class="num stat-display-val" style="color:var(--text);margin:3px 0 2px">82.4 kg</div>
+            <div class="sm muted num" style="margin-top:9px">7d avg 82.6 · −0.2</div>
+          </div>
+        </div>
+
+        <!-- Week Calendar & Streak -->
+        <div class="card tight">
+          <div class="week">
+            <span class="done">M</span>
+            <span class="done">T</span>
+            <span class="now">W</span>
+            <span>T</span>
+            <span>F</span>
+            <span>S</span>
+            <span>S</span>
+          </div>
+          <div class="sm num" style="margin-top:6px;color:var(--accent);font-weight:700">4-day streak</div>
+        </div>
+
+        <!-- Coach Note & Disclaimer -->
+        <div>
+          <div class="coach-text">Coach: rest on bench set to 2:30. Protein pace is solid.</div>
+          <div class="tiny" style="margin-top:3px">Non-medical fitness tracker.</div>
+        </div>
+      </div>
+
+      <!-- Navigation Bar -->
+      <nav class="tabs">
+        <button class="active"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4z"/></svg>Dashboard</button>
+        <button><svg viewBox="0 0 24 24"><path d="M4 16c3-6 6-2 8 0s5-6 8-10"/></svg>Weight</button>
+        <button><svg viewBox="0 0 24 24"><path d="M3 10h4l2-2h6l2 2h4v4h-4l-2 2H9l-2-2H3z"/></svg>Workouts</button>
+        <button><svg viewBox="0 0 24 24"><path d="M7 4v16M12 8c4 0 5 3 5 8H12V8z"/></svg>Nutrition</button>
+        <button><svg viewBox="0 0 24 24"><path d="M5 20V5h10l-2 3 2 3H5"/></svg>Goals</button>
+        <button><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 4v2M12 18v2M4 12h2M18 12h2"/></svg>Settings</button>
+      </nav>
+    </div>
+  </main>
+</body>
+</html>

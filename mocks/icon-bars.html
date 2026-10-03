@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FitTrack icon bars</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #07080A;
+      color: #F4F7FB;
+      font-family: ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+      padding: 32px 16px 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 28px;
+    }
+    header { text-align: center; max-width: 420px; }
+    h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.03em; }
+    header p { margin-top: 6px; color: #9AA6B8; font-size: 14px; }
+    .option { width: 390px; }
+    .option h2 { font-size: 15px; font-weight: 700; }
+    .option .note { color: #9AA6B8; font-size: 13px; margin: 4px 0 10px; }
+    .frame {
+      background: #07080C;
+      border: 1px solid #2A3344;
+      border-radius: 16px;
+      overflow: hidden;
+      padding-top: 28px;
+    }
+    .bar {
+      height: 72px;
+      background: #10141C;
+      border-top: 1px solid #2A3344;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      padding: 8px 4px 10px;
+    }
+    .bar button {
+      background: none;
+      border: 0;
+      color: #5C6778;
+      font-size: 9px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 4px;
+      position: relative;
+    }
+    .bar button.on { color: #E8F1FF; }
+    .bar svg { width: 24px; height: 24px; }
+    .bar.solid svg { fill: currentColor; }
+    .bar.stroke svg, .bar.mark svg, .bar.labels svg {
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.75;
+      stroke-linejoin: round;
+      stroke-linecap: round;
+    }
+    .bar.mark svg { stroke-linecap: square; stroke-linejoin: miter; }
+    .bar.labels { height: 78px; }
+    .bar.labels span { font-size: 11px; font-weight: 700; }
+    .bar.labels button.on::after {
+      content: "";
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 2px;
+      height: 2px;
+      background: #E8F1FF;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>FitTrack icon bars</h1>
+    <p>Four options. Dashboard is the active tab.</p>
+  </header>
+
+  <section class="option">
+    <h2>1. Stroke</h2>
+    <p class="note">In the local app now. Thin line icons.</p>
+    <div class="frame">
+      <nav class="bar stroke" aria-label="Stroke icon bar">
+        <button class="on"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7V20H4zM9 20v-6h6v6"/></svg>Dashboard</button>
+        <button><svg viewBox="0 0 24 24"><path d="M4 16l4-5 4 3 8-8"/><path d="M16 6h4v4"/></svg>Weight</button>
+        <button><svg viewBox="0 0 24 24"><path d="M3 10h3v4H3zM18 10h3v4h-3zM6 11h3v2H6zM15 11h3v2h-3zM9 12h6"/></svg>Workouts</button>
+        <button><svg viewBox="0 0 24 24"><path d="M8 4v16M6 7h4M6 11h4"/><path d="M14 5l4 2-1 14"/></svg>Nutrition</button>
+        <button><svg viewBox="0 0 24 24"><path d="M6 20V5h9l-2 3 2 3H6"/></svg>Goals</button>
+        <button><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="8" cy="7" r="1.6" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="11" cy="17" r="1.6" fill="currentColor" stroke="none"/></svg>Settings</button>
+      </nav>
+    </div>
+  </section>
+
+  <section class="option">
+    <h2>2. Solid</h2>
+    <p class="note">Same meanings, filled so they read faster when small.</p>
+    <div class="frame">
+      <nav class="bar solid" aria-label="Solid icon bar">
+        <button class="on"><svg viewBox="0 0 24 24"><path d="M12 3 3 11h2v9h5v-6h4v6h5v-9h2z"/></svg>Dashboard</button>
+        <button><svg viewBox="0 0 24 24"><path d="M3 17h18v2H3z"/><path d="M4 16l5-6 4 3 7-8 1.5 1.2L13.2 15 9 11 5 16z"/></svg>Weight</button>
+        <button><svg viewBox="0 0 24 24"><path d="M2 9h4v6H2zM18 9h4v6h-4zM6 10.5h3v3H6zM15 10.5h3v3h-3zM9 11.2h6v1.6H9z"/></svg>Workouts</button>
+        <button><svg viewBox="0 0 24 24"><path d="M7 3h2.2v18H7zM5.5 6.5h5.2v2H5.5zM5.5 11h5.2v2H5.5z"/><path d="M14 4.5 18.2 6.2 16.8 20h-2.2z"/></svg>Nutrition</button>
+        <button><svg viewBox="0 0 24 24"><path d="M6 3h2v18H6z"/><path d="M8 4h9l-2.2 3.2L17 10.5H8z"/></svg>Goals</button>
+        <button><svg viewBox="0 0 24 24"><path d="M3 6h18v2.2H3zM3 11h18v2.2H3zM3 16h18v2.2H3z"/><circle cx="8" cy="7.1" r="1.7"/><circle cx="15" cy="12.1" r="1.7"/><circle cx="11" cy="17.1" r="1.7"/></svg>Settings</button>
+      </nav>
+    </div>
+  </section>
+
+  <section class="option">
+    <h2>3. Mark</h2>
+    <p class="note">Sharper corners. Bowl, target, and gear instead of fork, flag, and sliders.</p>
+    <div class="frame">
+      <nav class="bar mark" aria-label="Mark icon bar">
+        <button class="on"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7V20H4z"/></svg>Dashboard</button>
+        <button><svg viewBox="0 0 24 24"><path d="M4 18h16M5 16l5-6 4 3 6-7"/></svg>Weight</button>
+        <button><svg viewBox="0 0 24 24"><path d="M2 9h5v6H2zM17 9h5v6h-5zM7 11h10"/></svg>Workouts</button>
+        <button><svg viewBox="0 0 24 24"><path d="M5 10h14a6 6 0 0 1-6 6h-2a6 6 0 0 1-6-6z"/></svg>Nutrition</button>
+        <button><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>Goals</button>
+        <button><svg viewBox="0 0 24 24"><path d="M12 8.5 13.2 5h-2.4zM12 15.5 10.8 19h2.4zM8.5 12 5 10.8v2.4zM15.5 12 19 13.2v-2.4z"/><circle cx="12" cy="12" r="3.2"/></svg>Settings</button>
+      </nav>
+    </div>
+  </section>
+
+  <section class="option">
+    <h2>4. Label-first</h2>
+    <p class="note">Same stroke icons. Bigger words, and a white line under the active tab.</p>
+    <div class="frame">
+      <nav class="bar stroke labels" aria-label="Label-first icon bar">
+        <button class="on"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7V20H4zM9 20v-6h6v6"/></svg><span>Dashboard</span></button>
+        <button><svg viewBox="0 0 24 24"><path d="M4 16l4-5 4 3 8-8"/><path d="M16 6h4v4"/></svg><span>Weight</span></button>
+        <button><svg viewBox="0 0 24 24"><path d="M3 10h3v4H3zM18 10h3v4h-3zM6 11h3v2H6zM15 11h3v2h-3zM9 12h6"/></svg><span>Workouts</span></button>
+        <button><svg viewBox="0 0 24 24"><path d="M8 4v16M6 7h4M6 11h4"/><path d="M14 5l4 2-1 14"/></svg><span>Nutrition</span></button>
+        <button><svg viewBox="0 0 24 24"><path d="M6 20V5h9l-2 3 2 3H6"/></svg><span>Goals</span></button>
+        <button><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="8" cy="7" r="1.6" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="11" cy="17" r="1.6" fill="currentColor" stroke="none"/></svg><span>Settings</span></button>
+      </nav>
+    </div>
+  </section>
+</body>
+</html>

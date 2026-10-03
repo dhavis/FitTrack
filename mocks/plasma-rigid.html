@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FitTrack — Plasma rigid mock</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #04111c;
+      --text: #eef4f6;
+      --muted: rgb(238 244 246 / 0.66);
+      --line: rgb(238 244 246 / 0.22);
+      --on: #e8f1ff;
+      --on-text: #06121a;
+      --mint: #9ff3e4;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      padding: 28px 16px;
+      background:
+        radial-gradient(480px 240px at 50% 0%, rgb(40 110 120 / 0.28), transparent 70%),
+        #04111c;
+      color: var(--text);
+      font: 400 15px/1.4 "Space Grotesk", system-ui, sans-serif;
+    }
+    .note { max-width: 390px; color: var(--muted); font-size: 13px; text-align: center; }
+    .phone {
+      width: 390px;
+      height: 780px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      padding: 20px 14px 0;
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgb(18 48 58 / 0.55), transparent 28%),
+        var(--bg);
+    }
+    .plate {
+      background: linear-gradient(180deg, rgb(36 64 74 / 0.42), rgb(6 16 22 / 0.62));
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16);
+    }
+    h1 { font-size: 32px; font-weight: 600; letter-spacing: -0.04em; }
+    h2 { font-size: 18px; font-weight: 600; letter-spacing: -0.03em; }
+    .kicker {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .screen { height: 100%; display: flex; flex-direction: column; gap: 10px; padding-bottom: 72px; }
+    .warn { padding: 14px; }
+    .warn p { color: var(--muted); margin: 6px 0 12px; }
+    .btn {
+      border: 1px solid var(--on);
+      border-radius: 4px;
+      padding: 10px 14px;
+      font: 600 13px "Space Grotesk", sans-serif;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: var(--on);
+      color: var(--on-text);
+    }
+    .btn.ghost { background: transparent; color: var(--text); border-color: var(--line); }
+    .row { display: flex; gap: 8px; }
+    .program { padding: 14px 14px 0; }
+    .day {
+      padding: 12px 0;
+      border-top: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .day strong { display: block; font-weight: 600; }
+    .day span { color: var(--muted); font-size: 13px; }
+    .recent { padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; }
+    .tag {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 4px 8px;
+      border: 1px solid var(--mint);
+      border-radius: 4px;
+      color: var(--mint);
+    }
+    .tabs {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 64px;
+      border-radius: 0;
+      border-left: 0;
+      border-right: 0;
+      border-bottom: 0;
+      display: flex;
+    }
+    .tab {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      color: rgb(238 244 246 / 0.45);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .tab.on { color: var(--on); box-shadow: inset 0 -2px 0 var(--on); }
+    .tab svg { width: 18px; height: 18px; fill: currentColor; }
+  </style>
+</head>
+<body>
+  <p class="note">Plasma glass, rigid gym edges. Deep teal plates, 4px corners, ice-white actions.</p>
+  <div class="phone">
+    <div class="screen">
+      <header>
+        <h1>Workouts</h1>
+        <p class="kicker">Main gym · free weights</p>
+      </header>
+      <section class="plate warn">
+        <h2>Still open</h2>
+        <p>A workout is still open. End it before starting another.</p>
+        <div class="row">
+          <button class="btn" type="button">Resume</button>
+          <button class="btn ghost" type="button">History</button>
+        </div>
+      </section>
+      <section class="plate program">
+        <h2>Strength 4-day</h2>
+        <p class="kicker">Oct 1 · 4 days</p>
+        <div class="day">
+          <div><strong>Upper A</strong><span>Horizontal push and pull · 6 exercises</span></div>
+          <button class="btn" type="button">Start</button>
+        </div>
+        <div class="day">
+          <div><strong>Lower A</strong><span>Squat and posterior chain · 5 exercises</span></div>
+          <button class="btn" type="button">Start</button>
+        </div>
+      </section>
+      <section class="plate recent">
+        <div>
+          <strong>Workout</strong>
+          <div class="kicker">Sep 24, 6:12 PM · tap to end</div>
+        </div>
+        <span class="tag">In progress</span>
+      </section>
+    </div>
+    <nav class="plate tabs" aria-label="Tabs">
+      <div class="tab"><svg viewBox="0 0 24 24"><path d="M12 3 3 11h2v9h5v-6h4v6h5v-9h2z"/></svg>Home</div>
+      <div class="tab"><svg viewBox="0 0 24 24"><path d="M3 17h18v2H3zM4 16l5-6 4 3 7-8 1.5 1.2L13.2 15 9 11 5 16z"/></svg>Weight</div>
+      <div class="tab on"><svg viewBox="0 0 24 24"><path d="M2 9h4v6H2zM18 9h4v6h-4zM6 10.5h3v3H6zM15 10.5h3v3h-3zM9 11.2h6v1.6H9z"/></svg>Workouts</div>
+      <div class="tab"><svg viewBox="0 0 24 24"><path d="M7 3h2.2v18H7zM5.5 6.5h5.2v2H5.5zM5.5 11h5.2v2H5.5zM14 4.5 18.2 6.2 16.8 20h-2.2z"/></svg>Fuel</div>
+      <div class="tab"><svg viewBox="0 0 24 24"><path d="M6 3h2v18H6zM8 4h9l-2.2 3.2L17 10.5H8z"/></svg>Goals</div>
+    </nav>
+  </div>
+</body>
+</html>
